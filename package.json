@@ -1,0 +1,22 @@
+{
+  "name": "xxx-tbetbetbe-nurpc",
+  "version": "0.1.0",
+  "description": "An implementation of gRPC in javascript",
+  "main": "index.js",
+  "devDependencies": {
+    "istanbul": "*",
+    "chai": "*",
+    "mocha": "*",
+    "docco": "*",
+    "bunyan": "*"
+  },
+  "dependencies": {
+    "concat-stream": "~1.4.8",
+    "http2": "~3.2.0"
+  },
+  "scripts": {
+    "test": "istanbul test _mocha -- --reporter spec --slow 500 --timeout 5000"
+  },
+  "author": "Timothy Emiola",
+  "license": "MIT"
+}
