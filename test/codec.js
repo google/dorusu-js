@@ -6,7 +6,7 @@ var expect = require('chai').expect;
 
 var ConcatStream = require('concat-stream');
 var EncodingStream = require('../lib/codec').EncodingStream;
-var DecodingStream = require('../lib/codec').EncodingStream;
+var DecodingStream = require('../lib/codec').DecodingStream;
 var Readable = require('stream').Readable;
 var Writable = require('stream').Writable;
 
