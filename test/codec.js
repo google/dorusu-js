@@ -32,6 +32,13 @@ describe('codec', function() {
       [60 * (Math.pow(10, 8)) * _1e6, '1666666H'],
       [2700 * _1e6 + 1, '2700000m']
     ];
+    var nanoSecondTests = [
+      [10, '10000n'],
+      [1, '1000n'],
+      [1, '1001n'],
+      [0, '100n'],
+      [0, '10n']
+    ];
     describe('microsToInterval', function() {
       intervalTests.forEach(function(t) {
         it('it should convert ' + t[0] + ' to ' + t[1] , function() {
@@ -52,6 +59,11 @@ describe('codec', function() {
     });
     describe('intervalToMicros', function() {
       intervalTests.forEach(function(t) {
+        it('it should convert ' + t[1] + ' to ' + t[0] , function() {
+          expect(intervalToMicros(t[1])).to.eql(t[0]);
+        });
+      });
+      nanoSecondTests.forEach(function(t) {
         it('it should convert ' + t[1] + ' to ' + t[0] , function() {
           expect(intervalToMicros(t[1])).to.eql(t[0]);
         });
@@ -190,7 +202,6 @@ describe('codec', function() {
       source.push(null);
     });
   });
-
   describe('decodeMessage', function() {
     it('should fail if the message is too small', function(done) {
       var willFail = new Buffer(2);
@@ -239,7 +250,6 @@ describe('codec', function() {
       });
     });
   });
-
   describe('encodeMessage', function() {
     it('should encode a zero-length buffer correctly', function(done) {
       var want = new Buffer(5);
