@@ -56,7 +56,7 @@ describe('client', function() {
             encodeMessage(response_text, null, replyEncoded);
           };
           request.once('data', function(data) {
-            decodeMessage(data, checkEncRq);
+            decodeMessage(data, null, checkEncRq);
           });
         });
 
