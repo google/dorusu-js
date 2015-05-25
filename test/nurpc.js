@@ -1,17 +1,17 @@
 'use strict';
 
 var expect = require('chai').expect;
-var util = require('./util');
 var fs = require('fs');
+var http2 = require('http2');
 var path = require('path');
+var nurpc = require('../lib/nurpc');
+var util = require('./util');
 
 var options = {
   key: fs.readFileSync(path.join(__dirname, '../example/localhost.key')),
   cert: fs.readFileSync(path.join(__dirname, '../example/localhost.crt')),
   log: util.serverLog
 };
-
-var http2 = require('http2');
 
 // typical tests should
 // - start a http2 server
@@ -33,7 +33,32 @@ var options = {
 
 http2.globalAgent = new http2.Agent({ log: util.clientLog });
 
-describe('grpc', function() {
+describe('nurpc module functions', function() {
+  describe('isSpecialHeader', function() {
+    it('should be true for a header beginning with :', function() {
+      var testHeaders = [':random', ':authority', ':host'];
+      for (var i = 0; i < testHeaders.length; i++) {
+        expect(nurpc.isSpecialHeader(testHeaders[i])).to.be.true;
+      }
+    });
+    it('should be true known special headers', function() {
+      var testHeaders = [
+        'content-type',
+        'grpc-encoding',
+        'grpc-message-type',
+        'grpc-status',
+        'grpc-timeout',
+        'te',
+        'user-agent'
+      ];
+      for (var i = 0; i < testHeaders.length; i++) {
+        expect(nurpc.isSpecialHeader(testHeaders[i])).to.be.true;
+      }
+    });
+  });
+});
+
+describe('nurpc', function() {
   describe('Agent', function() {
     describe('method `request(options, [callback])`', function() {
       it('should throw when trying to use with \'http\' scheme', function() {
