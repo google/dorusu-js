@@ -1,5 +1,6 @@
 var path = require('path');
 var fs = require('fs');
+var net = require('net');
 var spawn = require('child_process').spawn;
 
 function noop() {}
@@ -55,6 +56,23 @@ exports.callNTimes = function callNTimes(limit, done) {
     };
   }
 };
+
+exports.nextAvailablePort = nextAvailablePort;
+/**
+ * Finds a free port that a server can bind to, in the format
+ * "address:port"
+ *
+ * @param {function(addr)} callback that returns the addr
+ */
+function nextAvailablePort(cb) {
+  var server = net.createServer();
+  server.listen(function() {
+    var addr = server.address();
+    server.close(function() {
+      cb(addr);
+    });
+  });
+}
 
 // Concatenate an array of buffers into a new buffer
 exports.concat = function concat(buffers) {
