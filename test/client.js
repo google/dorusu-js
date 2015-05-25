@@ -21,7 +21,6 @@ var options = {
   log: serverLog
 };
 
-
 // typical tests should
 // - start a http2 server
 // - send a request using the grpc surface
@@ -36,7 +35,7 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
 http2.globalAgent = new http2.Agent({ log: clientLog });
 
-function listenOnNextPort(server, opts, cb) {
+function listenOnFreePort(server, opts, cb) {
   opts = opts || {};
   if (!opts.protocol) {
     opts.protocol = 'https:';
@@ -93,7 +92,7 @@ describe('client', function() {
             });
           });
         };
-        listenOnNextPort(server, {}, verifyResponse);
+        listenOnFreePort(server, {}, verifyResponse);
       });
       it('should send arbitrary headers when requested', function(done) {
         var headerName = 'name';
@@ -124,7 +123,7 @@ describe('client', function() {
             });
           });
         };
-        listenOnNextPort(server, null, verifyResponse);
+        listenOnFreePort(server, null, verifyResponse);
       });
       it.skip('should fail on sending bad grpc-timeout value', function(done) {
         var headerName = 'grpc-timeout';
@@ -150,10 +149,10 @@ describe('client', function() {
           util.log('after request_response');
         };
         // var shouldThrow = function() {
-        //   listenOnNextPort(server, null, verifyResponse);
+        //   listenOnFreePort(server, null, verifyResponse);
         // };
         // expect(shouldThrow).to.throw(Error);
-        listenOnNextPort(server, null, verifyResponse);
+        listenOnFreePort(server, null, verifyResponse);
       });
       it('should succeed in sending a good grpc-timeout value', function(done) {
         var headerName = 'grpc-timeout';
@@ -184,14 +183,11 @@ describe('client', function() {
             });
           });
         };
-        listenOnNextPort(server, null, verifyResponse);
+        listenOnFreePort(server, null, verifyResponse);
       });
       it('should send a grpc-timeout when a deadline is provided', function(done) {
-        var headerName = 'grpc-timeout';
-        var deadlineOpt = 'deadline';
-        var headerValue = '10S';
         var server = http2.createServer(options, function(request, response) {
-          expect(request.headers[headerName]).to.exist;
+          expect(request.headers['grpc-timeout']).to.exist;
           var validateReqThenRespond = function(err, decoded){
             expect(decoded.toString()).to.equal(msg);
             encodeMessage(reply, null, makeSendEncodedResponse(response));
@@ -207,7 +203,7 @@ describe('client', function() {
         var testDeadline = new Date();
         var nowPlus10 = Date.now() + Math.pow(10, 4);
         testDeadline.setTime(nowPlus10);
-        headers[deadlineOpt] = testDeadline;
+        headers['deadline'] = testDeadline;
         var verifyResponse = function(srv, stub) {
           stub.request_response(path, msg, headers, function(response) {
             response.on('data', function(data) {
@@ -219,7 +215,29 @@ describe('client', function() {
             });
           });
         };
-        listenOnNextPort(server, null, verifyResponse);
+        listenOnFreePort(server, null, verifyResponse);
+      });
+      it('should timeout a request when a deadline is provided', function(done) {
+        var server = http2.createServer(options, function(request, response) {
+          expect(request.headers['grpc-timeout']).to.exist;
+          // don't handle response, this should cause the client to cancel.
+        });
+
+        // verifyResponse checks that the data is the reply, i.e, it has been
+        // decoded successfully.
+        var headers = {};
+        var testDeadline = new Date();
+        var nowPlusHalfSec = Date.now() + 500; // 500 ms
+        testDeadline.setTime(nowPlusHalfSec);
+        headers['deadline'] = testDeadline;
+        var verifyResponse = function(srv, stub) {
+          var req = stub.request_response(path, msg, headers, _.noop);
+          req.on('cancel', function() {
+            server.close();
+            done();
+          });
+        };
+        listenOnFreePort(server, null, verifyResponse);
       });
     });
   });
