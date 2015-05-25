@@ -183,6 +183,42 @@ describe('client', function() {
         };
         listenOnFreePort(server, null, thisTest);
       });
+      it('should cancel a request ok', function(done) {
+        var server = http2.createServer(options, function(request, response) {
+          expect(request.headers['grpc-timeout']).to.not.exist;
+          // confirm that no timeout header was sent
+          // don't handle response, this should cause the client to cancel.
+        });
+
+        // thisTest makes a request then cancels it.
+        var thisTest = function(srv, stub) {
+          var req = stub.request_response(path, msg, {}, _.noop);
+          req.cancel();
+          req.on('cancel', function() {
+            server.close();
+            done();
+          });
+        };
+        listenOnFreePort(server, null, thisTest);
+      });
+      it('should abort a request ok', function(done) {
+        var server = http2.createServer(options, function(request, response) {
+          expect(request.headers['grpc-timeout']).to.not.exist;
+          // confirm that no timeout header was sent
+          // don't handle response, this should cause the client to cancel.
+        });
+
+        // thisTest makes a request then aborts it.
+        var thisTest = function(srv, stub) {
+          var req = stub.request_response(path, msg, {}, _.noop);
+          req.abort();
+          req.on('cancel', function() {
+            server.close();
+            done();
+          });
+        };
+        listenOnFreePort(server, null, thisTest);
+      });
     });
   });
 });
