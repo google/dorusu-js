@@ -79,9 +79,9 @@ describe('client', function() {
           });
         });
 
-        // verifyResponse checks that the data is the reply, i.e, it has been
-        // decoded successfully.
-        var verifyResponse = function(srv, stub) {
+        // thisTest checks that the expected text is the reply, i.e, it
+        // has been decoded successfully.
+        var thisTest = function(srv, stub) {
           stub.request_response(path, msg, {}, function(response) {
             response.on('data', function(data) {
               expect(data.toString()).to.equal(reply);
@@ -92,130 +92,74 @@ describe('client', function() {
             });
           });
         };
-        listenOnFreePort(server, {}, verifyResponse);
+        listenOnFreePort(server, {}, thisTest);
       });
       it('should send arbitrary headers when requested', function(done) {
         var headerName = 'name';
         var headerValue = 'value';
         var server = http2.createServer(options, function(request, response) {
           expect(request.headers[headerName]).to.equal(headerValue);
-          var validateReqThenRespond = function(err, decoded){
-            expect(decoded.toString()).to.equal(msg);
-            encodeMessage(reply, null, makeSendEncodedResponse(response));
-          };
-          request.once('data', function(data) {
-            decodeMessage(data, null, validateReqThenRespond);
-          });
+          server.close();
+          done();
         });
 
-        // verifyResponse checks that the data is the reply, i.e, it has been
-        // decoded successfully.
+        // thisTest sends a test header is sent.
         var headers = {};
         headers[headerName] = headerValue;
-        var verifyResponse = function(srv, stub) {
-          stub.request_response(path, msg, headers, function(response) {
-            response.on('data', function(data) {
-              expect(data.toString()).to.equal(reply);
-            });
-            response.on('end', function() {
-              srv.close();
-              done();
-            });
-          });
-        };
-        listenOnFreePort(server, null, verifyResponse);
-      });
-      it.skip('should fail on sending bad grpc-timeout value', function(done) {
-        var headerName = 'grpc-timeout';
-        var headerValue = 'foo';
-        var server = http2.createServer(options, function(request, response) {
-          expect(request.headers[headerName]).to.equal(headerValue);
-          var validateReqThenRespond = function(err, decoded){
-            expect(decoded.toString()).to.equal(msg);
-            encodeMessage(reply, null, makeSendEncodedResponse(response));
-          };
-          request.once('data', function(data) {
-            decodeMessage(data, null, validateReqThenRespond);
-          });
-        });
-
-        // verifyResponse checks that the data is the reply, i.e, it has been
-        // decoded successfully.
-        var headers = {};
-        headers[headerName] = headerValue;
-        var verifyResponse = function(srv, stub) {
-          util.log('before request_response');
+        var thisTest = function(srv, stub) {
           stub.request_response(path, msg, headers, _.noop);
-          util.log('after request_response');
         };
-        // var shouldThrow = function() {
-        //   listenOnFreePort(server, null, verifyResponse);
-        // };
-        // expect(shouldThrow).to.throw(Error);
-        listenOnFreePort(server, null, verifyResponse);
+        listenOnFreePort(server, null, thisTest);
+      });
+      it('should fail on sending bad grpc-timeout value', function(done) {
+        var server = http2.createServer(options, _.noop);
+
+        // thisTest sends a bad grpc-timeout header.
+        var headers = {};
+        headers['grpc-timeout'] = 'this will not work';
+        var thisTest = function(srv, stub) {
+          var shouldThrow = function shouldThrow() {
+            stub.request_response(path, msg, headers, _.noop);
+            done();
+          };
+          expect(shouldThrow).to.throw(Error);
+        };
+        listenOnFreePort(server, null, thisTest);
       });
       it('should succeed in sending a good grpc-timeout value', function(done) {
         var headerName = 'grpc-timeout';
         var headerValue = '10S';
         var server = http2.createServer(options, function(request, response) {
           expect(request.headers[headerName]).to.equal(headerValue);
-          var validateReqThenRespond = function(err, decoded){
-            expect(decoded.toString()).to.equal(msg);
-            encodeMessage(reply, null, makeSendEncodedResponse(response));
-          };
-          request.once('data', function(data) {
-            decodeMessage(data, null, validateReqThenRespond);
-          });
+          server.close();
+          done();
         });
 
-        // verifyResponse checks that the data is the reply, i.e, it has been
-        // decoded successfully.
+        // thisTest sends a test header.
         var headers = {};
         headers[headerName] = headerValue;
-        var verifyResponse = function(srv, stub) {
-          stub.request_response(path, msg, headers, function(response) {
-            response.on('data', function(data) {
-              expect(data.toString()).to.equal(reply);
-            });
-            response.on('end', function() {
-              srv.close();
-              done();
-            });
-          });
+        var thisTest = function(srv, stub) {
+          stub.request_response(path, msg, headers, _.noop);
         };
-        listenOnFreePort(server, null, verifyResponse);
+        listenOnFreePort(server, null, thisTest);
       });
       it('should send a grpc-timeout when a deadline is provided', function(done) {
         var server = http2.createServer(options, function(request, response) {
           expect(request.headers['grpc-timeout']).to.exist;
-          var validateReqThenRespond = function(err, decoded){
-            expect(decoded.toString()).to.equal(msg);
-            encodeMessage(reply, null, makeSendEncodedResponse(response));
-          };
-          request.once('data', function(data) {
-            decodeMessage(data, null, validateReqThenRespond);
-          });
+          server.close();
+          done();
         });
 
-        // verifyResponse checks that the data is the reply, i.e, it has been
-        // decoded successfully.
+        // thisTest sends the test header.
         var headers = {};
         var testDeadline = new Date();
         var nowPlus10 = Date.now() + Math.pow(10, 4);
         testDeadline.setTime(nowPlus10);
         headers['deadline'] = testDeadline;
-        var verifyResponse = function(srv, stub) {
-          stub.request_response(path, msg, headers, function(response) {
-            response.on('data', function(data) {
-              expect(data.toString()).to.equal(reply);
-            });
-            response.on('end', function() {
-              srv.close();
-              done();
-            });
-          });
+        var thisTest = function(srv, stub) {
+          stub.request_response(path, msg, headers, _.noop);
         };
-        listenOnFreePort(server, null, verifyResponse);
+        listenOnFreePort(server, null, thisTest);
       });
       it('should timeout a request when a deadline is provided', function(done) {
         var server = http2.createServer(options, function(request, response) {
@@ -223,21 +167,21 @@ describe('client', function() {
           // don't handle response, this should cause the client to cancel.
         });
 
-        // verifyResponse checks that the data is the reply, i.e, it has been
-        // decoded successfully.
+        // thisTest sends a request with a timeout
         var headers = {};
         var testDeadline = new Date();
         var nowPlusHalfSec = Date.now() + 500; // 500 ms
         testDeadline.setTime(nowPlusHalfSec);
         headers['deadline'] = testDeadline;
-        var verifyResponse = function(srv, stub) {
+        var thisTest = function(srv, stub) {
           var req = stub.request_response(path, msg, headers, _.noop);
           req.on('cancel', function() {
             server.close();
+            expect(Date.now()).to.be.above(nowPlusHalfSec);
             done();
           });
         };
-        listenOnFreePort(server, null, verifyResponse);
+        listenOnFreePort(server, null, thisTest);
       });
     });
   });
