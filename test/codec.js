@@ -5,6 +5,7 @@ var encodeMessage = require('../lib/codec').encodeMessage;
 var expect = require('chai').expect;
 var intervalToMicros = require('../lib/codec').intervalToMicros;
 var microsToInterval = require('../lib/codec').microsToInterval;
+var isInterval = require('../lib/codec').isInterval;
 var util = require('util');
 
 var ConcatStream = require('concat-stream');
@@ -57,6 +58,13 @@ describe('codec', function() {
         expect(shouldThrow).to.throw(Error);
       });
     });
+    var invalidIntervals = [
+      '100d',
+      '9x9M',
+      'notANumber',
+      '1000',
+      'm1000',
+    ];
     describe('intervalToMicros', function() {
       intervalTests.forEach(function(t) {
         it('it should convert ' + t[1] + ' to ' + t[0] , function() {
@@ -68,19 +76,27 @@ describe('codec', function() {
           expect(intervalToMicros(t[1])).to.eql(t[0]);
         });
       });
-      var invalidIntervals = [
-        '100d',
-        '9x9M',
-        'notANumber',
-        '1000',
-        'm1000',
-      ];
       it('should raise if the interval value is invalid', function() {
         invalidIntervals.forEach(function(t) {
           var shouldThrow = function shouldThrow() {
             intervalToMicros(t);
           };
           expect(shouldThrow).to.throw(Error);
+        });
+      });
+    });
+    describe('isInterval', function() {
+      it('should be false for invalid intervals', function() {
+        invalidIntervals.forEach(function(t) {
+          expect(isInterval(t)).to.be.false;
+        });
+      });
+      it('should be true for valid intervals', function() {
+        intervalTests.forEach(function(t) {
+          expect(isInterval(t[1])).to.be.true;
+        });
+        nanoSecondTests.forEach(function(t) {
+          expect(isInterval(t[1])).to.be.true;
         });
       });
     });
