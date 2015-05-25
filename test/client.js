@@ -1,9 +1,9 @@
 'use strict';
 
 var expect = require('chai').expect;
-var util = require('./util');
 var fs = require('fs');
 var path = require('path');
+var util = require('./util');
 
 var Stub = require('../lib/client').Stub;
 
@@ -51,8 +51,6 @@ describe('client', function() {
         server.listen(1505, function() {
           var stub = new Stub('https://localhost:1505' + path);
           stub.request_response(path, request_text, function(response) {
-            console.log('am in the callback');
-
             response.on('data', function(data) {
               expect(data.toString()).to.equal(message);
             });
