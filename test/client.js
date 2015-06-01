@@ -68,31 +68,45 @@ describe('client', function() {
     var reply = 'world';
     describe('request_response', function() {
       it('should work as expected', function(done) {
-        var server = http2.createServer(options, function(request, response) {
+        // thisTest checks that the expected text is the reply, i.e, it
+        // has been decoded successfully.
+        var thisTest = function(srv, stub) {
+          stub.request_response(path, msg, {}, function(response) {
+            var theStatus;
+            var theError;
+            response.on('data', function(data) {
+              expect(data.toString()).to.equal(reply);
+            });
+            response.on('status', function(status) {
+              theStatus = status;
+            });
+            response.on('error', function(err) {
+              theError = err;
+            });
+            response.on('end', function() {
+              expect(theStatus).to.deep.equal({
+                'message': '',
+                'code': 0
+              });
+              expect(theError).to.be.undefined;
+              srv.close();
+              done();
+            });
+          });
+        };
+        var s = http2.createServer(options, function(request, response) {
           expect(request.url).to.equal(path);
           var validateReqThenRespond = function(err, decoded){
             expect(decoded.toString()).to.equal(msg);
             encodeMessage(reply, null, makeSendEncodedResponse(response));
           };
           request.once('data', function(data) {
+            // TODO: add symbols for the well-known status codes: OK == 0, etc.
+            response.addTrailers({'grpc-status': 0});
             decodeMessage(data, null, validateReqThenRespond);
           });
         });
-
-        // thisTest checks that the expected text is the reply, i.e, it
-        // has been decoded successfully.
-        var thisTest = function(srv, stub) {
-          stub.request_response(path, msg, {}, function(response) {
-            response.on('data', function(data) {
-              expect(data.toString()).to.equal(reply);
-            });
-            response.on('end', function() {
-              srv.close();
-              done();
-            });
-          });
-        };
-        listenOnFreePort(server, {}, thisTest);
+        listenOnFreePort(s, {}, thisTest);
       });
       it('should send arbitrary headers when requested', function(done) {
         var headerName = 'name';
@@ -218,6 +232,89 @@ describe('client', function() {
           });
         };
         listenOnFreePort(server, null, thisTest);
+      });
+      describe('when the response status is bad', function() {
+        var badStatuses = [
+          'not-a-number-is-bad',
+          '',
+          new Object()
+        ];
+        var inTrailers = [true, false];
+        badStatuses.forEach(function(badStatus) {
+          inTrailers.forEach(function(inTrailer) {
+            var inName = inTrailer ? 'trailers' : 'headers';
+            var testDesc = 'fails if status in ' + inName + ' is ' + badStatus;
+            it(testDesc, function(done) {
+              // thisTest checks that the client throws an error on a bad
+              // status.
+              var thisTest = function(srv, stub) {
+                var shouldThrow = function shouldThrow() {
+                  stub.request_response(path, msg, {}, _.noop);
+                  srv.close();
+                  done();
+                };
+                expect(shouldThrow).to.throw(Error);
+              };
+
+              var s = http2.createServer(options, function(request, response) {
+                var validateReqThenRespond = function(err, decoded) {
+                  encodeMessage(reply, null, makeSendEncodedResponse(response));
+                };
+                request.once('data', function(data) {
+                  if (inTrailer) {
+                    response.addTrailers({'grpc-status': badStatus});
+                  } else {
+                    response.setHeader('grpc-status', badStatus);
+                  }
+                  decodeMessage(data, null, validateReqThenRespond);
+                });
+              });
+              listenOnFreePort(s, null, thisTest);
+            });
+          });
+        });
+      });
+      it('should receive the status message and code', function(done) {
+        // thisTest checks that the expected status code and message are received.
+        var code = 14014;
+        var message = 'code is fourteen-o-fourteen';
+        var thisTest = function(srv, stub) {
+          stub.request_response(path, msg, {}, function(response) {
+            var theStatus;
+            var theError;
+            response.on('data', _.noop);
+            response.on('status', function(status) {
+              theStatus = status;
+            });
+            response.on('error', function(err) {
+              theError = err;
+            });
+            response.on('end', function() {
+              var wanted = {
+                'message': message,
+                'code': code
+              };
+              expect(theStatus).to.deep.equal(wanted);
+              expect(theError).to.deep.equal(wanted);
+              srv.close();
+              done();
+            });
+          });
+        };
+        var s = http2.createServer(options, function(request, response) {
+          var validateReqThenRespond = function(err, decoded){
+            encodeMessage(reply, null, makeSendEncodedResponse(response));
+          };
+          request.once('data', function(data) {
+            // TODO: add symbols for the well-known status codes: OK == 0, etc.
+            response.addTrailers({
+              'grpc-status': code,
+              'grpc-message': message
+            });
+            decodeMessage(data, null, validateReqThenRespond);
+          });
+        });
+        listenOnFreePort(s, {}, thisTest);
       });
     });
   });
