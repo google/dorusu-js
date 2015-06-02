@@ -34,26 +34,37 @@ var options = {
 http2.globalAgent = new http2.Agent({ log: util.clientLog });
 
 describe('nurpc module functions', function() {
-  describe('isSpecialHeader', function() {
-    it('should be true for a header beginning with :', function() {
-      var testHeaders = [':random', ':authority', ':host'];
-      for (var i = 0; i < testHeaders.length; i++) {
-        expect(nurpc.isSpecialHeader(testHeaders[i])).to.be.true;
-      }
+  describe('isReservedHeader', function() {
+    var colonStarters = [':random', ':authority', ':host'];
+    colonStarters.forEach(function(h) {
+      it('should be true for ' + h, function() {
+        expect(nurpc.isReservedHeader(h)).to.be.true;
+      });
     });
-    it('should be true known special headers', function() {
-      var testHeaders = [
-        'content-type',
-        'grpc-encoding',
-        'grpc-message-type',
-        'grpc-status',
-        'grpc-timeout',
-        'te',
-        'user-agent'
-      ];
-      for (var i = 0; i < testHeaders.length; i++) {
-        expect(nurpc.isSpecialHeader(testHeaders[i])).to.be.true;
-      }
+    var reservedHeaders =  [
+      'content-type',
+      'grpc-encoding',
+      'grpc-message',
+      'grpc-message-type',
+      'grpc-status',
+      'grpc-timeout',
+      'te',
+      'user-agent'
+    ];
+    reservedHeaders.forEach(function(h) {
+      it('should be true for ' + h, function() {
+        expect(nurpc.isReservedHeader(h)).to.be.true;
+      });
+    });
+    var unreservedHeaders =  [
+      'myapp-foo',
+      'myapp-bar',
+      'x-my-well-known-header',
+    ];
+    unreservedHeaders.forEach(function(h) {
+      it('should be false for ' + h, function() {
+        expect(nurpc.isReservedHeader(h)).to.be.false;
+      });
     });
   });
 });
