@@ -21,15 +21,12 @@ var options = {
   log: serverLog
 };
 
-// typical tests should
+// typical tests
 // - start a http2 server
-// - send a request using the grpc surface
-// - verify behaviour on the server using the http2 surface
-// - respond using the http2 surface
+// - send a request using the grpc client library
+// - verify behaviour on the server using the http2 library
+// - respond using the http2 library
 // - verify the expected client response
-
-// use the same options object fields names as a http request would use
-// refactor surface to the current gRPC one, apart from headers
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
@@ -76,8 +73,8 @@ describe('client', function() {
     var reply = 'world';
     describe('request_response', function() {
       it('should work as expected', function(done) {
-        // thisTest checks that the expected text is the reply, i.e, it
-        // has been decoded successfully.
+        // thisTest checks that the expected text is in the reply, i.e, it has
+        // been decoded successfully.
         var thisTest = function(srv, stub) {
           stub.request_response(path, msg, {}, function(response) {
             var theStatus;
@@ -116,30 +113,135 @@ describe('client', function() {
         };
         checkClientAndServer(thisTest, thisServer);
       });
-      it('should send arbitrary headers when requested', function(done) {
-        var headerName = 'name';
-        var headerValue = 'value';
-        var server = http2.createServer(options, function(request, response) {
-          expect(request.headers[headerName]).to.equal(headerValue);
-          server.close();
-          done();
-        });
+      describe('with single-value arbitrary headers', function() {
+        it('should send headers when provided', function(done) {
+          var headerName = 'name';
+          var headerValue = 'value';
+          var server = http2.createServer(options, function(request, response) {
+            expect(request.headers[headerName]).to.equal(headerValue);
+            server.close();
+            done();
+          });
 
-        // thisTest sends a test header is sent.
-        var headers = {};
-        headers[headerName] = headerValue;
-        var thisTest = function(srv, stub) {
-          stub.request_response(path, msg, headers, _.noop);
-        };
-        listenOnFreePort(server, null, thisTest);
+          // thisTest sends a test header.
+          var headers = {};
+          headers[headerName] = headerValue;
+          var thisTest = function(srv, stub) {
+            stub.request_response(path, msg, headers, _.noop);
+          };
+          listenOnFreePort(server, null, thisTest);
+        });
+        it('should base64+rename if value is a Buffer', function(done) {
+          var headerName = 'name';
+          var headerValue = new Buffer('value');
+          var server = http2.createServer(options, function(request, response) {
+            var want = headerValue.toString('base64');
+            expect(request.headers[headerName + '-bin']).to.equal(want);
+            expect(request.headers[headerName]).to.be.undefined;
+            server.close();
+            done();
+          });
+
+          // thisTest sends a test header with Buffer value.
+          var headers = {};
+          headers[headerName] = headerValue;
+          var thisTest = function(srv, stub) {
+            stub.request_response(path, msg, headers, _.noop);
+          };
+          listenOnFreePort(server, null, thisTest);
+        });
+        it('should base64+rename if value is non-ascii', function(done) {
+          var headerName = 'name';
+          var headerValue = '\u00bd + \u00bc = \u00be';
+          var server = http2.createServer(options, function(request, response) {
+            var want = new Buffer(headerValue).toString('base64');
+            expect(request.headers[headerName + '-bin']).to.equal(want);
+            expect(request.headers[headerName]).to.be.undefined;
+            server.close();
+            done();
+          });
+
+          // thisTest sends a test header with an non-ascii value
+          var headers = {};
+          headers[headerName] = headerValue;
+          var thisTest = function(srv, stub) {
+            stub.request_response(path, msg, headers, _.noop);
+          };
+          listenOnFreePort(server, null, thisTest);
+        });
       });
-      it('should fail on sending bad grpc-timeout value', function(done) {
+      describe('with multi-value arbitrary headers', function() {
+        it('should send headers when provided', function(done) {
+          var headerName = 'name';
+          var headerValue = ['value1', 'value2'];
+          var server = http2.createServer(options, function(request, response) {
+            expect(request.headers[headerName]).to.deep.equal(headerValue);
+            server.close();
+            done();
+          });
+
+          // thisTest sends a test header with an array value
+          var headers = {};
+          headers[headerName] = headerValue;
+          var thisTest = function(srv, stub) {
+            stub.request_response(path, msg, headers, _.noop);
+          };
+          listenOnFreePort(server, null, thisTest);
+        });
+        it('should base64+rename if any item is a Buffer', function(done) {
+          var headerName = 'name';
+          var headerValue = [new Buffer('value'), 'this is ascii'];
+          var server = http2.createServer(options, function(request, response) {
+            var want = [
+              headerValue[0].toString('base64'),
+              new Buffer(headerValue[1]).toString('base64')
+            ];
+            expect(request.headers[headerName + '-bin']).to.deep.equal(want);
+            expect(request.headers[headerName]).to.be.undefined;
+            server.close();
+            done();
+          });
+
+          // thisTest sends a test header with an array containing one Buffer
+          // value.
+          var headers = {};
+          headers[headerName] = headerValue;
+          var thisTest = function(srv, stub) {
+            stub.request_response(path, msg, headers, _.noop);
+          };
+          listenOnFreePort(server, null, thisTest);
+        });
+        it('should base64+rename if any item that is non-ascii', function(done) {
+          var headerName = 'name';
+          var headerValue = ['\u00bd + \u00bc = \u00be', 'this is ascii'];
+          var server = http2.createServer(options, function(request, response) {
+            var want = [
+              new Buffer(headerValue[0]).toString('base64'),
+              new Buffer(headerValue[1]).toString('base64')
+            ];
+            expect(request.headers[headerName + '-bin']).to.deep.equal(want);
+            expect(request.headers[headerName]).to.be.undefined;
+            server.close();
+            done();
+          });
+          // thisTest sends a test header with an array containing one non-ascii
+          // value.
+          var headers = {};
+          headers[headerName] = headerValue;
+          var thisTest = function(srv, stub) {
+            stub.request_response(path, msg, headers, _.noop);
+          };
+          listenOnFreePort(server, null, thisTest);
+        });
+      });
+      it('should fail on sending a bad grpc-timeout value', function(done) {
         // thisTest sends a bad grpc-timeout header.
         var headers = {};
         headers['grpc-timeout'] = 'this will not work';
         var thisTest = function(srv, stub) {
           var shouldThrow = function shouldThrow() {
             stub.request_response(path, msg, headers, _.noop);
+            srv.close();
             done();
           };
           expect(shouldThrow).to.throw(Error);
@@ -155,7 +257,7 @@ describe('client', function() {
           done();
         });
 
-        // thisTest sends a test header.
+        // thisTest sends the grpc-timeout header with a valid value.
         var headers = {};
         headers[headerName] = headerValue;
         var thisTest = function(srv, stub) {
@@ -357,7 +459,7 @@ describe('client', function() {
           checkClientAndServer(thisTest, thisServer);
         });
         it('should include any unreserved headers', function(done) {
-          // thisTest checks that no metadata is set
+          // thisTest checks that the metadata includes expected headers
           var thisTest = function(srv, stub) {
             stub.request_response(path, msg, {}, function(response) {
               var theMetadata = undefined;
@@ -421,6 +523,81 @@ describe('client', function() {
             request.once('data', function(data) {
               response.setHeader(
                 'my-header', ['my-header-value', 'my-header-value2']);
+              response.addTrailers({
+                'grpc-status': 0,
+                'grpc-message': 'not-counted-as-metadata'
+              });
+              response.sendDate = false;  // stop 'date' from being sent
+              decodeMessage(data, null, receiveThenReply);
+            });
+          };
+          checkClientAndServer(thisTest, thisServer);
+        });
+        it('should decode binary metadata ok', function(done) {
+          var buf = new Buffer('\u00bd + \u00bc = \u00be');
+          // thisTest checks that binary metadata is decoded into a Buffer.
+          var thisTest = function(srv, stub) {
+            stub.request_response(path, msg, {}, function(response) {
+              var theMetadata = undefined;
+              response.on('data', _.noop);
+              response.on('metadata', function(md) {
+                theMetadata = md;
+              });
+              var want = {
+                'my-header': buf
+              };
+              response.on('end', function() {
+                expect(theMetadata).to.deep.eql(want);
+                srv.close();
+                done();
+              });
+            });
+          };
+          var thisServer = function(request, response) {
+            var receiveThenReply = function(err, decoded){
+              encodeMessage(reply, null, makeSendEncodedResponse(response));
+            };
+            request.once('data', function(data) {
+              response.setHeader(
+                'my-header-bin', buf.toString('base64'));
+              response.addTrailers({
+                'grpc-status': 0,
+                'grpc-message': 'not-counted-as-metadata'
+              });
+              response.sendDate = false;  // stop 'date' from being sent
+              decodeMessage(data, null, receiveThenReply);
+            });
+          };
+          checkClientAndServer(thisTest, thisServer);
+        });
+        it('should decode multi-value binary metadata ok', function(done) {
+          var buf = new Buffer('\u00bd + \u00bc = \u00be');
+          // thisTest checks that multi-value binary metadata is decoded into
+          // buffers.
+          var thisTest = function(srv, stub) {
+            stub.request_response(path, msg, {}, function(response) {
+              var theMetadata = undefined;
+              response.on('data', _.noop);
+              response.on('metadata', function(md) {
+                theMetadata = md;
+              });
+              var want = {
+                'my-header': [buf, buf]
+              };
+              response.on('end', function() {
+                expect(theMetadata).to.deep.eql(want);
+                srv.close();
+                done();
+              });
+            });
+          };
+          var thisServer = function(request, response) {
+            var receiveThenReply = function(err, decoded){
+              encodeMessage(reply, null, makeSendEncodedResponse(response));
+            };
+            request.once('data', function(data) {
+              response.setHeader(
+                'my-header-bin', [buf.toString('base64'), buf.toString('base64')]);
               response.addTrailers({
                 'grpc-status': 0,
                 'grpc-message': 'not-counted-as-metadata'
