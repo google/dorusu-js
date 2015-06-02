@@ -316,6 +316,116 @@ describe('client', function() {
         });
         listenOnFreePort(s, {}, thisTest);
       });
+      describe('with response metadata', function() {
+        it('only emits a metadata event when any is present', function(done) {
+          // thisTest checks that no metadata is set
+          var thisTest = function(srv, stub) {
+            stub.request_response(path, msg, {}, function(response) {
+              var metadataFired = false;
+              response.on('data', _.noop);
+              response.on('metadata', function(md) {
+                metadataFired = true;
+              });
+              response.on('end', function() {
+                expect(metadataFired).to.deep.false;
+                srv.close();
+                done();
+              });
+            });
+          };
+          var s = http2.createServer(options, function(request, response) {
+            var validateReqThenRespond = function(err, decoded){
+              encodeMessage(reply, null, makeSendEncodedResponse(response));
+            };
+            request.once('data', function(data) {
+              response.setHeader('content-type', 'not-counted-as-metadata');
+              response.setHeader('user-agent', 'not-counted-as-metadata');
+              response.addTrailers({
+                'grpc-status': 0,
+                'grpc-message': 'not-counted-as-metadata'
+              });
+              response.sendDate = false;  // by default the date header gets sent
+              decodeMessage(data, null, validateReqThenRespond);
+            });
+          });
+          listenOnFreePort(s, {}, thisTest);
+        });
+        it('should include any unreserved headers', function(done) {
+          // thisTest checks that no metadata is set
+          var thisTest = function(srv, stub) {
+            stub.request_response(path, msg, {}, function(response) {
+              var theMetadata = undefined;
+              var want = {
+                'my-header': 'my-header-value',
+                'my-trailer': 'my-trailer-value'
+              };
+              response.on('data', _.noop);
+              response.on('metadata', function(md) {
+                theMetadata = md;
+              });
+              response.on('end', function() {
+                expect(theMetadata).to.be.deep.eql(want);
+                srv.close();
+                done();
+              });
+            });
+          };
+          var s = http2.createServer(options, function(request, response) {
+            var validateReqThenRespond = function(err, decoded){
+              encodeMessage(reply, null, makeSendEncodedResponse(response));
+            };
+            request.once('data', function(data) {
+              response.setHeader('my-header', 'my-header-value');
+              response.addTrailers({
+                'my-trailer': 'my-trailer-value',
+                'content-type': 'this-is-reserved-and-is-not-metadata',
+                'grpc-status': 0,
+                'grpc-message': 'not-counted-as-metadata'
+              });
+              response.sendDate = false;  // by default the date header gets sent
+              decodeMessage(data, null, validateReqThenRespond);
+            });
+          });
+          listenOnFreePort(s, {}, thisTest);
+        });
+        it('should represent multi-value metadata as arrays', function(done) {
+          // thisTest checks that multi-value metadata is propagated as an
+          // array.
+          var thisTest = function(srv, stub) {
+            stub.request_response(path, msg, {}, function(response) {
+              var theMetadata = undefined;
+              response.on('data', _.noop);
+              response.on('metadata', function(md) {
+                theMetadata = md;
+              });
+              var want = {
+                'my-header': ['my-header-value', 'my-header-value2']
+              };
+              response.on('end', function() {
+                expect(theMetadata).to.deep.eql(want);
+                srv.close();
+                done();
+              });
+            });
+          };
+          var s = http2.createServer(options, function(request, response) {
+            var validateReqThenRespond = function(err, decoded){
+              encodeMessage(reply, null, makeSendEncodedResponse(response));
+            };
+            request.once('data', function(data) {
+              response.setHeader(
+                'my-header', ['my-header-value', 'my-header-value2']);
+              response.addTrailers({
+                'grpc-status': 0,
+                'grpc-message': 'not-counted-as-metadata'
+              });
+              response.sendDate = false;  // stop 'date' from being sent
+              decodeMessage(data, null, validateReqThenRespond);
+            });
+          });
+          listenOnFreePort(s, {}, thisTest);
+        });
+      });
     });
   });
 });
