@@ -54,11 +54,19 @@ function listenOnFreePort(server, opts, cb) {
   nextAvailablePort(setUpStub);
 }
 
+function makeServer(serverExpects) {
+  return http2.createServer(options, serverExpects);
+};
+
+function checkClientAndServer(clientExpects, serverExpects, opts) {
+  var s = makeServer(serverExpects);
+  listenOnFreePort(s, opts, clientExpects);
+}
+
 function makeSendEncodedResponse(response) {
-  var res = function sendEncodedResponse(encoded) {
+  return function sendEncodedResponse(encoded) {
     response.end(encoded);
   };
-  return res;
 }
 
 describe('client', function() {
@@ -94,7 +102,7 @@ describe('client', function() {
             });
           });
         };
-        var s = http2.createServer(options, function(request, response) {
+        var thisServer = function(request, response) {
           expect(request.url).to.equal(path);
           var validateReqThenRespond = function(err, decoded){
             expect(decoded.toString()).to.equal(msg);
@@ -105,8 +113,8 @@ describe('client', function() {
             response.addTrailers({'grpc-status': 0});
             decodeMessage(data, null, validateReqThenRespond);
           });
-        });
-        listenOnFreePort(s, {}, thisTest);
+        };
+        checkClientAndServer(thisTest, thisServer);
       });
       it('should send arbitrary headers when requested', function(done) {
         var headerName = 'name';
@@ -126,8 +134,6 @@ describe('client', function() {
         listenOnFreePort(server, null, thisTest);
       });
       it('should fail on sending bad grpc-timeout value', function(done) {
-        var server = http2.createServer(options, _.noop);
-
         // thisTest sends a bad grpc-timeout header.
         var headers = {};
         headers['grpc-timeout'] = 'this will not work';
@@ -138,7 +144,7 @@ describe('client', function() {
           };
           expect(shouldThrow).to.throw(Error);
         };
-        listenOnFreePort(server, null, thisTest);
+        checkClientAndServer(thisTest, _.noop);
       });
       it('should succeed in sending a good grpc-timeout value', function(done) {
         var headerName = 'grpc-timeout';
@@ -158,12 +164,6 @@ describe('client', function() {
         listenOnFreePort(server, null, thisTest);
       });
       it('should send a grpc-timeout when a deadline is provided', function(done) {
-        var server = http2.createServer(options, function(request, response) {
-          expect(request.headers['grpc-timeout']).to.exist;
-          server.close();
-          done();
-        });
-
         // thisTest sends the test header.
         var headers = {};
         var testDeadline = new Date();
@@ -173,14 +173,15 @@ describe('client', function() {
         var thisTest = function(srv, stub) {
           stub.request_response(path, msg, headers, _.noop);
         };
+
+        var server = http2.createServer(options, function(request, response) {
+          expect(request.headers['grpc-timeout']).to.exist;
+          server.close();
+          done();
+        });
         listenOnFreePort(server, null, thisTest);
       });
       it('should timeout a request when a deadline is provided', function(done) {
-        var server = http2.createServer(options, function(request, response) {
-          expect(request.headers['grpc-timeout']).to.exist;
-          // don't handle response, this should cause the client to cancel.
-        });
-
         // thisTest sends a request with a timeout
         var headers = {};
         var testDeadline = new Date();
@@ -190,48 +191,53 @@ describe('client', function() {
         var thisTest = function(srv, stub) {
           var req = stub.request_response(path, msg, headers, _.noop);
           req.on('cancel', function() {
-            server.close();
+            srv.close();
             expect(Date.now()).to.be.above(nowPlusHalfSec);
             done();
           });
         };
-        listenOnFreePort(server, null, thisTest);
+
+        var thisServer = function(request, response) {
+          expect(request.headers['grpc-timeout']).to.exist;
+          // don't handle response, this should cause the client to cancel.
+        };
+        checkClientAndServer(thisTest, thisServer);
       });
       it('should cancel a request ok', function(done) {
-        var server = http2.createServer(options, function(request, response) {
-          expect(request.headers['grpc-timeout']).to.not.exist;
-          // confirm that no timeout header was sent
-          // don't handle response, this should cause the client to cancel.
-        });
-
         // thisTest makes a request then cancels it.
         var thisTest = function(srv, stub) {
           var req = stub.request_response(path, msg, {}, _.noop);
           req.cancel();
           req.on('cancel', function() {
-            server.close();
+            srv.close();
             done();
           });
         };
-        listenOnFreePort(server, null, thisTest);
-      });
-      it('should abort a request ok', function(done) {
-        var server = http2.createServer(options, function(request, response) {
+
+        var thisServer = function(request, response) {
           expect(request.headers['grpc-timeout']).to.not.exist;
           // confirm that no timeout header was sent
           // don't handle response, this should cause the client to cancel.
-        });
-
+        };
+        checkClientAndServer(thisTest, thisServer);
+      });
+      it('should abort a request ok', function(done) {
         // thisTest makes a request then aborts it.
         var thisTest = function(srv, stub) {
           var req = stub.request_response(path, msg, {}, _.noop);
           req.abort();
           req.on('cancel', function() {
-            server.close();
+            srv.close();
             done();
           });
         };
-        listenOnFreePort(server, null, thisTest);
+
+        var thisServer = function(request, response) {
+          expect(request.headers['grpc-timeout']).to.not.exist;
+          // confirm that no timeout header was sent
+          // don't handle response, this should cause the client to cancel.
+        };
+        checkClientAndServer(thisTest, thisServer);
       });
       describe('when the response status is bad', function() {
         var badStatuses = [
@@ -256,8 +262,8 @@ describe('client', function() {
                 expect(shouldThrow).to.throw(Error);
               };
 
-              var s = http2.createServer(options, function(request, response) {
-                var validateReqThenRespond = function(err, decoded) {
+              var thisServer = function(request, response) {
+                var receiveThenReply = function(err, decoded) {
                   encodeMessage(reply, null, makeSendEncodedResponse(response));
                 };
                 request.once('data', function(data) {
@@ -266,10 +272,10 @@ describe('client', function() {
                   } else {
                     response.setHeader('grpc-status', badStatus);
                   }
-                  decodeMessage(data, null, validateReqThenRespond);
+                  decodeMessage(data, null, receiveThenReply);
                 });
-              });
-              listenOnFreePort(s, null, thisTest);
+              };
+              checkClientAndServer(thisTest, thisServer);
             });
           });
         });
@@ -301,8 +307,8 @@ describe('client', function() {
             });
           });
         };
-        var s = http2.createServer(options, function(request, response) {
-          var validateReqThenRespond = function(err, decoded){
+        var thisServer = function(request, response) {
+          var receiveThenReply = function(err, decoded){
             encodeMessage(reply, null, makeSendEncodedResponse(response));
           };
           request.once('data', function(data) {
@@ -311,10 +317,10 @@ describe('client', function() {
               'grpc-status': code,
               'grpc-message': message
             });
-            decodeMessage(data, null, validateReqThenRespond);
+            decodeMessage(data, null, receiveThenReply);
           });
-        });
-        listenOnFreePort(s, {}, thisTest);
+        };
+        checkClientAndServer(thisTest, thisServer);
       });
       describe('with response metadata', function() {
         it('only emits a metadata event when any is present', function(done) {
@@ -327,14 +333,14 @@ describe('client', function() {
                 metadataFired = true;
               });
               response.on('end', function() {
-                expect(metadataFired).to.deep.false;
+                expect(metadataFired).to.be.false;
                 srv.close();
                 done();
               });
             });
           };
-          var s = http2.createServer(options, function(request, response) {
-            var validateReqThenRespond = function(err, decoded){
+          var thisServer = function(request, response) {
+            var receiveThenReply = function(err, decoded){
               encodeMessage(reply, null, makeSendEncodedResponse(response));
             };
             request.once('data', function(data) {
@@ -345,10 +351,10 @@ describe('client', function() {
                 'grpc-message': 'not-counted-as-metadata'
               });
               response.sendDate = false;  // by default the date header gets sent
-              decodeMessage(data, null, validateReqThenRespond);
+              decodeMessage(data, null, receiveThenReply);
             });
-          });
-          listenOnFreePort(s, {}, thisTest);
+          };
+          checkClientAndServer(thisTest, thisServer);
         });
         it('should include any unreserved headers', function(done) {
           // thisTest checks that no metadata is set
@@ -370,8 +376,8 @@ describe('client', function() {
               });
             });
           };
-          var s = http2.createServer(options, function(request, response) {
-            var validateReqThenRespond = function(err, decoded){
+          var thisServer = function(request, response) {
+            var receiveThenReply = function(err, decoded){
               encodeMessage(reply, null, makeSendEncodedResponse(response));
             };
             request.once('data', function(data) {
@@ -383,10 +389,10 @@ describe('client', function() {
                 'grpc-message': 'not-counted-as-metadata'
               });
               response.sendDate = false;  // by default the date header gets sent
-              decodeMessage(data, null, validateReqThenRespond);
+              decodeMessage(data, null, receiveThenReply);
             });
-          });
-          listenOnFreePort(s, {}, thisTest);
+          };
+          checkClientAndServer(thisTest, thisServer);
         });
         it('should represent multi-value metadata as arrays', function(done) {
           // thisTest checks that multi-value metadata is propagated as an
@@ -408,8 +414,8 @@ describe('client', function() {
               });
             });
           };
-          var s = http2.createServer(options, function(request, response) {
-            var validateReqThenRespond = function(err, decoded){
+          var thisServer = function(request, response) {
+            var receiveThenReply = function(err, decoded){
               encodeMessage(reply, null, makeSendEncodedResponse(response));
             };
             request.once('data', function(data) {
@@ -420,10 +426,10 @@ describe('client', function() {
                 'grpc-message': 'not-counted-as-metadata'
               });
               response.sendDate = false;  // stop 'date' from being sent
-              decodeMessage(data, null, validateReqThenRespond);
+              decodeMessage(data, null, receiveThenReply);
             });
-          });
-          listenOnFreePort(s, {}, thisTest);
+          };
+          checkClientAndServer(thisTest, thisServer);
         });
       });
     });
