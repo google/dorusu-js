@@ -1,6 +1,8 @@
 var path = require('path');
 var fs = require('fs');
+var http2  = require('http2');
 var net = require('net');
+var url = require('url');
 var spawn = require('child_process').spawn;
 
 function noop() {}
@@ -57,22 +59,51 @@ exports.callNTimes = function callNTimes(limit, done) {
   }
 };
 
+exports.secureOptions = {
+  key: fs.readFileSync(path.join(__dirname, '../example/localhost.key')),
+  cert: fs.readFileSync(path.join(__dirname, '../example/localhost.crt')),
+  log: exports.serverLog
+};
+
+exports.insecureOptions = {
+  protocol: 'http:',
+  plain: true
+};
+
 exports.nextAvailablePort = nextAvailablePort;
 /**
- * Finds a free port that a server can bind to, in the format
- * "address:port"
+ * Finds a free port that a server can bind to, return an address
  *
- * @param {function(addr)} callback that returns the addr
+ * @param {function(addr)} done is called with the free address
  */
-function nextAvailablePort(cb) {
+function nextAvailablePort(done) {
   var server = net.createServer();
   server.listen(function() {
     var addr = server.address();
     server.close(function() {
-      cb(addr);
+      done(addr);
     });
   });
 }
+
+/**
+ * Runs `srv` on the next available free port, and executes a `clientTask` that
+ * may access the running server.
+ *
+ * clientTasks is a function(addr, srv) where addr represents the address that
+ * server is running and srv is the srv instance.
+ *
+ * @param {object} srv a server instance
+ * @param {function} clientTask that
+ */
+exports.listenOnFreePort = function listenOnFreePort(srv, clientTask) {
+  var startServer = function startServer(addr) {
+    srv.listen(addr.port, function() {
+      clientTask(addr, srv);
+    });
+  };
+  nextAvailablePort(startServer);
+};
 
 // Concatenate an array of buffers into a new buffer
 exports.concat = function concat(buffers) {

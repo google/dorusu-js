@@ -5,73 +5,41 @@ var clientLog = require('./util').clientLog;
 var decodeMessage = require('../lib/codec').decodeMessage;
 var encodeMessage = require('../lib/codec').encodeMessage;
 var expect = require('chai').expect;
-var fs = require('fs');
 var http2 = require('http2');
-var path = require('path');
-var nextAvailablePort = require('./util').nextAvailablePort;
-var serverLog = require('./util').serverLog;
-var url = require('url');
-var util = require('util');
+var insecureOptions = require('./util').insecureOptions;
+var listenOnFreePort = require('./util').listenOnFreePort;
+var secureOptions = require('./util').secureOptions;
 
 var Stub = require('../lib/client').Stub;
 
-var options = {
-  key: fs.readFileSync(path.join(__dirname, '../example/localhost.key')),
-  cert: fs.readFileSync(path.join(__dirname, '../example/localhost.crt')),
-  log: serverLog
-};
-
-// typical tests
-// - start a http2 server
-// - send a request using the grpc client library
-// - verify behaviour on the server using the http2 library
-// - respond using the http2 library
+// Tests here cannot rely on RpcServer, they use the base http2 server
+// along with functions in the codec module.
+//
+//
+// - start a http2 server, i.e, do not assume the rpc server is available
+// - send a request via the nurpc client
+// - verify behaviour on the server using the http2 library + decodeMessage
+// - respond using the http2 library + encodeMessage
 // - verify the expected client response
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
 http2.globalAgent = new http2.Agent({ log: clientLog });
 
-function listenOnFreePort(server, opts, cb) {
-  opts = opts || {};
-  if (!opts.protocol) {
-    opts.protocol = 'https:';
-  }
-  var setUpStub = function setUpStub(addr) {
-    server.listen(addr.port, function() {
-      var stubAddr = url.format({
-        protocol: opts.protocol,
-        hostname: 'localhost',
-        port: addr.port
-      });
-      var stub = new Stub(stubAddr);
-      cb(server, stub);
-    });
+describe('RpcClient', function() {
+  var path = '/x';
+  var msg = 'hello';
+  var reply = 'world';
+  var testOptions = {
+    secure: secureOptions,
+    insecure: insecureOptions
   };
-  nextAvailablePort(setUpStub);
-}
-
-function makeServer(serverExpects) {
-  return http2.createServer(options, serverExpects);
-};
-
-function checkClientAndServer(clientExpects, serverExpects, opts) {
-  var s = makeServer(serverExpects);
-  listenOnFreePort(s, opts, clientExpects);
-}
-
-function makeSendEncodedResponse(response) {
-  return function sendEncodedResponse(encoded) {
-    response.end(encoded);
-  };
-}
-
-describe('client', function() {
-  describe('test scenario', function() {
-    var path = '/x';
-    var msg = 'hello';
-    var reply = 'world';
-    describe('request_response', function() {
+  _.forEach(testOptions, function(serverOpts, connType) {
+    var createServer = http2.createServer;
+    if (connType == 'insecure') {
+      createServer = http2.raw.createServer;
+    }
+    describe(connType + ': request_response', function() {
       it('should work as expected', function(done) {
         // thisTest checks that the expected text is in the reply, i.e, it has
         // been decoded successfully.
@@ -111,13 +79,13 @@ describe('client', function() {
             decodeMessage(data, null, validateReqThenRespond);
           });
         };
-        checkClientAndServer(thisTest, thisServer);
+        checkClientAndServer(thisTest, thisServer, serverOpts);
       });
       describe('with single-value arbitrary headers', function() {
         it('should send headers when provided', function(done) {
           var headerName = 'name';
           var headerValue = 'value';
-          var server = http2.createServer(options, function(request, response) {
+          var server = createServer(serverOpts, function(request, response) {
             expect(request.headers[headerName]).to.equal(headerValue);
             server.close();
             done();
@@ -129,12 +97,12 @@ describe('client', function() {
           var thisTest = function(srv, stub) {
             stub.request_response(path, msg, headers, _.noop);
           };
-          listenOnFreePort(server, null, thisTest);
+          checkClient(server, thisTest, serverOpts);
         });
         it('should base64+rename if value is a Buffer', function(done) {
           var headerName = 'name';
           var headerValue = new Buffer('value');
-          var server = http2.createServer(options, function(request, response) {
+          var server = createServer(serverOpts, function(request, response) {
             var want = headerValue.toString('base64');
             expect(request.headers[headerName + '-bin']).to.equal(want);
             expect(request.headers[headerName]).to.be.undefined;
@@ -148,12 +116,12 @@ describe('client', function() {
           var thisTest = function(srv, stub) {
             stub.request_response(path, msg, headers, _.noop);
           };
-          listenOnFreePort(server, null, thisTest);
+          checkClient(server, thisTest, serverOpts);
         });
         it('should base64+rename if value is non-ascii', function(done) {
           var headerName = 'name';
           var headerValue = '\u00bd + \u00bc = \u00be';
-          var server = http2.createServer(options, function(request, response) {
+          var server = createServer(serverOpts, function(request, response) {
             var want = new Buffer(headerValue).toString('base64');
             expect(request.headers[headerName + '-bin']).to.equal(want);
             expect(request.headers[headerName]).to.be.undefined;
@@ -167,14 +135,14 @@ describe('client', function() {
           var thisTest = function(srv, stub) {
             stub.request_response(path, msg, headers, _.noop);
           };
-          listenOnFreePort(server, null, thisTest);
+          checkClient(server, thisTest, serverOpts);
         });
       });
       describe('with multi-value arbitrary headers', function() {
         it('should send headers when provided', function(done) {
           var headerName = 'name';
           var headerValue = ['value1', 'value2'];
-          var server = http2.createServer(options, function(request, response) {
+          var server = createServer(serverOpts, function(request, response) {
             expect(request.headers[headerName]).to.deep.equal(headerValue);
             server.close();
             done();
@@ -186,12 +154,12 @@ describe('client', function() {
           var thisTest = function(srv, stub) {
             stub.request_response(path, msg, headers, _.noop);
           };
-          listenOnFreePort(server, null, thisTest);
+          checkClient(server, thisTest, serverOpts);
         });
         it('should base64+rename if any item is a Buffer', function(done) {
           var headerName = 'name';
           var headerValue = [new Buffer('value'), 'this is ascii'];
-          var server = http2.createServer(options, function(request, response) {
+          var server = createServer(serverOpts, function(request, response) {
             var want = [
               headerValue[0].toString('base64'),
               new Buffer(headerValue[1]).toString('base64')
@@ -209,12 +177,12 @@ describe('client', function() {
           var thisTest = function(srv, stub) {
             stub.request_response(path, msg, headers, _.noop);
           };
-          listenOnFreePort(server, null, thisTest);
+          checkClient(server, thisTest, serverOpts);
         });
         it('should base64+rename if any item that is non-ascii', function(done) {
           var headerName = 'name';
           var headerValue = ['\u00bd + \u00bc = \u00be', 'this is ascii'];
-          var server = http2.createServer(options, function(request, response) {
+          var server = createServer(serverOpts, function(request, response) {
             var want = [
               new Buffer(headerValue[0]).toString('base64'),
               new Buffer(headerValue[1]).toString('base64')
@@ -231,7 +199,7 @@ describe('client', function() {
           var thisTest = function(srv, stub) {
             stub.request_response(path, msg, headers, _.noop);
           };
-          listenOnFreePort(server, null, thisTest);
+          checkClient(server, thisTest, serverOpts);
         });
       });
       it('should fail on sending a bad grpc-timeout value', function(done) {
@@ -239,19 +207,27 @@ describe('client', function() {
         var headers = {};
         headers['grpc-timeout'] = 'this will not work';
         var thisTest = function(srv, stub) {
-          var shouldThrow = function shouldThrow() {
-            stub.request_response(path, msg, headers, _.noop);
+          // TODO: investigate a way of writing EncodedOutgoingRequest._start
+          // so that error handling of this case is simpler
+          try {
+            var req = stub.request_response(path, msg, headers, _.noop);
+            req.on('error', function(){
+              // This works when the timeout is bad for secure requests
+              srv.close();
+              done();
+            });
+          } catch (err) {
+            // This works when the timeout is bad for insecure requests
             srv.close();
             done();
-          };
-          expect(shouldThrow).to.throw(Error);
+          }
         };
-        checkClientAndServer(thisTest, _.noop);
+        checkClientAndServer(thisTest, _.noop, serverOpts);
       });
       it('should succeed in sending a good grpc-timeout value', function(done) {
         var headerName = 'grpc-timeout';
         var headerValue = '10S';
-        var server = http2.createServer(options, function(request, response) {
+        var server = createServer(serverOpts, function(request, response) {
           expect(request.headers[headerName]).to.equal(headerValue);
           server.close();
           done();
@@ -263,7 +239,7 @@ describe('client', function() {
         var thisTest = function(srv, stub) {
           stub.request_response(path, msg, headers, _.noop);
         };
-        listenOnFreePort(server, null, thisTest);
+        checkClient(server, thisTest, serverOpts);
       });
       it('should send a grpc-timeout when a deadline is provided', function(done) {
         // thisTest sends the test header.
@@ -276,12 +252,12 @@ describe('client', function() {
           stub.request_response(path, msg, headers, _.noop);
         };
 
-        var server = http2.createServer(options, function(request, response) {
+        var server = createServer(serverOpts, function(request, response) {
           expect(request.headers['grpc-timeout']).to.exist;
           server.close();
           done();
         });
-        listenOnFreePort(server, null, thisTest);
+        checkClient(server, thisTest, serverOpts);
       });
       it('should timeout a request when a deadline is provided', function(done) {
         // thisTest sends a request with a timeout
@@ -303,7 +279,7 @@ describe('client', function() {
           expect(request.headers['grpc-timeout']).to.exist;
           // don't handle response, this should cause the client to cancel.
         };
-        checkClientAndServer(thisTest, thisServer);
+        checkClientAndServer(thisTest, thisServer, serverOpts);
       });
       it('should cancel a request ok', function(done) {
         // thisTest makes a request then cancels it.
@@ -321,7 +297,7 @@ describe('client', function() {
           // confirm that no timeout header was sent
           // don't handle response, this should cause the client to cancel.
         };
-        checkClientAndServer(thisTest, thisServer);
+        checkClientAndServer(thisTest, thisServer, serverOpts);
       });
       it('should abort a request ok', function(done) {
         // thisTest makes a request then aborts it.
@@ -339,7 +315,7 @@ describe('client', function() {
           // confirm that no timeout header was sent
           // don't handle response, this should cause the client to cancel.
         };
-        checkClientAndServer(thisTest, thisServer);
+        checkClientAndServer(thisTest, thisServer, serverOpts);
       });
       describe('when the response status is bad', function() {
         var badStatuses = [
@@ -356,12 +332,13 @@ describe('client', function() {
               // thisTest checks that the client throws an error on a bad
               // status.
               var thisTest = function(srv, stub) {
-                var shouldThrow = function shouldThrow() {
-                  stub.request_response(path, msg, {}, _.noop);
-                  srv.close();
-                  done();
+                var checkError = function checkError(resp) {
+                  resp.on('error', function() {
+                    srv.close();
+                    done();
+                  });
                 };
-                expect(shouldThrow).to.throw(Error);
+                stub.request_response(path, msg, {}, checkError);
               };
 
               var thisServer = function(request, response) {
@@ -377,7 +354,7 @@ describe('client', function() {
                   decodeMessage(data, null, receiveThenReply);
                 });
               };
-              checkClientAndServer(thisTest, thisServer);
+              checkClientAndServer(thisTest, thisServer, serverOpts);
             });
           });
         });
@@ -422,7 +399,7 @@ describe('client', function() {
             decodeMessage(data, null, receiveThenReply);
           });
         };
-        checkClientAndServer(thisTest, thisServer);
+        checkClientAndServer(thisTest, thisServer, serverOpts);
       });
       describe('with response metadata', function() {
         it('only emits a metadata event when any is present', function(done) {
@@ -456,7 +433,7 @@ describe('client', function() {
               decodeMessage(data, null, receiveThenReply);
             });
           };
-          checkClientAndServer(thisTest, thisServer);
+          checkClientAndServer(thisTest, thisServer, serverOpts);
         });
         it('should include any unreserved headers', function(done) {
           // thisTest checks that the metadata includes expected headers
@@ -494,7 +471,7 @@ describe('client', function() {
               decodeMessage(data, null, receiveThenReply);
             });
           };
-          checkClientAndServer(thisTest, thisServer);
+          checkClientAndServer(thisTest, thisServer, serverOpts);
         });
         it('should represent multi-value metadata as arrays', function(done) {
           // thisTest checks that multi-value metadata is propagated as an
@@ -531,7 +508,7 @@ describe('client', function() {
               decodeMessage(data, null, receiveThenReply);
             });
           };
-          checkClientAndServer(thisTest, thisServer);
+          checkClientAndServer(thisTest, thisServer, serverOpts);
         });
         it('should decode binary metadata ok', function(done) {
           var buf = new Buffer('\u00bd + \u00bc = \u00be');
@@ -568,7 +545,7 @@ describe('client', function() {
               decodeMessage(data, null, receiveThenReply);
             });
           };
-          checkClientAndServer(thisTest, thisServer);
+          checkClientAndServer(thisTest, thisServer, serverOpts);
         });
         it('should decode multi-value binary metadata ok', function(done) {
           var buf = new Buffer('\u00bd + \u00bc = \u00be');
@@ -606,9 +583,35 @@ describe('client', function() {
               decodeMessage(data, null, receiveThenReply);
             });
           };
-          checkClientAndServer(thisTest, thisServer);
+          checkClientAndServer(thisTest, thisServer, serverOpts);
         });
       });
     });
   });
 });
+
+function checkClient(server, clientExpects, opts) {
+  listenOnFreePort(server, function(addr, server) {
+    var stubOpts = {};
+    _.merge(stubOpts, addr, opts);
+    clientExpects(server, new Stub(stubOpts));
+  });
+}
+
+function makeServer(opts, serverExpects) {
+  if (opts.plain) {
+    return http2.raw.createServer(opts, serverExpects);
+  } else {
+    return http2.createServer(opts, serverExpects);
+  }
+};
+
+function checkClientAndServer(clientExpects, serverExpects, opts) {
+  checkClient(makeServer(opts, serverExpects), clientExpects, opts);
+}
+
+function makeSendEncodedResponse(response) {
+  return function sendEncodedResponse(encoded) {
+    response.end(encoded);
+  };
+}
