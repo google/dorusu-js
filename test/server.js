@@ -5,6 +5,7 @@ var expect = require('chai').expect;
 var http2 = require('http2');
 var insecureOptions = require('./util').insecureOptions;
 var listenOnFreePort = require('./util').listenOnFreePort;
+var nurpc = require('../lib/nurpc');
 var secureOptions = require('./util').secureOptions;
 var server = require('../lib/server');
 
@@ -21,6 +22,19 @@ var Stub = require('../lib/client').Stub;
 // - optionally verify what the client receives using the nurpc
 
 describe('RpcServer', function() {
+  var testTable = {
+    '/x': function yHandler(request, response) {
+      request.once('data', function(data) {
+        response.end('response from /x');
+      });
+    },
+    '/y': function yHandler(request, response) {
+      request.once('data', function(data) {
+        response.end('response from /y');
+      });
+    }
+  };
+
   var nonBinMd = {
     trailer1: 'value1',
     trailer2: 'value2'
@@ -46,6 +60,127 @@ describe('RpcServer', function() {
     insecure: insecureOptions
   };
   _.forEach(testOptions, function(serverOptions, connType) {
+    describe(connType + ': `server.makeDispatcher`', function() {
+      it('should respond with rpcCode 404 for empty table', function(done) {
+        var thisClient = function(srv, stub) {
+          stub.request_response(path, msg, {}, function(response) {
+            var theStatus;
+            var theError;
+            response.on('data', _.noop);
+            response.on('status', function(status) {
+              theStatus = status;
+            });
+            response.on('error', function(err) {
+              theError = err;
+            });
+            response.on('end', function() {
+              expect(theStatus).to.deep.equal({
+                'message': '',
+                'code': nurpc.rpcCode('NOT_FOUND')
+              });
+              expect(theError).to.deep.equal({
+                'message': '',
+                'code': nurpc.rpcCode('NOT_FOUND')
+              });
+              srv.close();
+              done();
+            });
+          });
+        };
+
+        checkClientAndServer(thisClient, server.makeDispatcher(), serverOptions);
+      });
+      it('should respond with rpcCode 404 for unknown routes', function(done) {
+        var thisClient = function(srv, stub) {
+          stub.request_response(path, msg, {}, function(response) {
+            var theStatus;
+            var theError;
+            response.on('data', _.noop);
+            response.on('status', function(status) {
+              theStatus = status;
+            });
+            response.on('error', function(err) {
+              theError = err;
+            });
+            response.on('end', function() {
+              expect(theStatus).to.deep.equal({
+                'message': '',
+                'code': nurpc.rpcCode('NOT_FOUND')
+              });
+              expect(theError).to.deep.equal({
+                'message': '',
+                'code': nurpc.rpcCode('NOT_FOUND')
+              });
+              srv.close();
+              done();
+            });
+          });
+        };
+
+        var table = _.clone(testTable);
+        delete table['/x'];
+        var dispatcher = server.makeDispatcher(table);
+        checkClientAndServer(thisClient, dispatcher, serverOptions);
+      });
+      it('should respond for configured routes', function(done) {
+        var thisClient = function(srv, stub) {
+          stub.request_response(path, msg, {}, function(response) {
+            var theStatus;
+            var theError;
+            response.on('data', _.noop);
+            response.on('status', function(status) {
+              theStatus = status;
+            });
+            response.on('error', function(err) {
+              theError = err;
+            });
+            response.on('end', function() {
+              expect(theStatus).to.deep.equal({
+                'message': '',
+                'code': nurpc.rpcCode('OK')
+              });
+              expect(theError).to.be.undefined;
+              srv.close();
+              done();
+            });
+          });
+        };
+
+        var dispatcher = server.makeDispatcher(testTable);
+        checkClientAndServer(thisClient, dispatcher, serverOptions);
+      });
+    })
+    describe(connType + ': `server.notFound`', function() {
+      it('should respond with rpcCode 404', function(done) {
+        var thisClient = function(srv, stub) {
+          stub.request_response(path, msg, {}, function(response) {
+            var theStatus;
+            var theError;
+            response.on('data', _.noop);
+            response.on('status', function(status) {
+              theStatus = status;
+            });
+            response.on('error', function(err) {
+              theError = err;
+            });
+            response.on('end', function() {
+              expect(theStatus).to.deep.equal({
+                'message': '',
+                'code': nurpc.rpcCode('NOT_FOUND')
+              });
+              expect(theError).to.deep.equal({
+                'message': '',
+                'code': nurpc.rpcCode('NOT_FOUND')
+              });
+              srv.close();
+              done();
+            });
+          });
+        };
+
+        checkClientAndServer(thisClient, server.notFound, serverOptions);
+      });
+    })
     describe(connType + ': simple request/response', function() {
       it('should work as expected', function(done) {
         var thisClient = function(srv, stub) {
