@@ -4,8 +4,10 @@ var decodeMessage = require('../lib/codec').decodeMessage;
 var encodeMessage = require('../lib/codec').encodeMessage;
 var expect = require('chai').expect;
 var intervalToMicros = require('../lib/codec').intervalToMicros;
-var microsToInterval = require('../lib/codec').microsToInterval;
+var irreverser = require('./util').irreverser;
 var isInterval = require('../lib/codec').isInterval;
+var microsToInterval = require('../lib/codec').microsToInterval;
+var reverser = require('./util').reverser;
 var util = require('util');
 
 var ConcatStream = require('concat-stream');
@@ -102,17 +104,6 @@ describe('codec', function() {
     });
   });
 
-  // reverser is used as a test serialization func
-  var reverser = function reverser(s) {
-    var r = s.toString().split('').reverse().join('');
-    return new Buffer(r);
-  };
-
-  // irreverser is used as a test deserialization func
-  var irreverser = function irreverser(s) {
-    return s.toString().split('').reverse().join('');
-  };
-
   describe('DecodingStream', function() {
     it('should decode from a valid encoded stream ok', function(done) {
       var sink = Writable();
@@ -138,7 +129,7 @@ describe('codec', function() {
       source.pipe(enc).pipe(dec).pipe(sink);
       source.push(null);
     });
-    it('should decode using the deserializer when present', function(done) {
+    it('should decode using the unmarshalr when present', function(done) {
       var sink = Writable();
       var collected = [];
       sink._write = function _write(chunk, enc, next) {
@@ -157,8 +148,8 @@ describe('codec', function() {
         source.push(nextMsg);
         wanted.push(nextMsg);
       }
-      var enc = EncodingStream({serialize: reverser});
-      var dec = DecodingStream({deserialize: irreverser});
+      var enc = EncodingStream({marshal: reverser});
+      var dec = DecodingStream({unmarshal: irreverser});
       source.pipe(enc).pipe(dec).pipe(sink);
       source.push(null);
     });
@@ -199,8 +190,8 @@ describe('codec', function() {
       source.pipe(enc).pipe(sink);
       source.push(null);
     });
-    it('should use the serializer when present', function(done){
-      var enc = EncodingStream({serialize: reverser});
+    it('should use the marshalr when present', function(done){
+      var enc = EncodingStream({marshal: reverser});
       var num = 6; // arbitrary
       var partSize = Buffer.byteLength('msg0');
       var sink = ConcatStream({encoding: 'buffer'}, function(buf) {
@@ -252,14 +243,14 @@ describe('codec', function() {
         done();
       });
     });
-    it('should apply the deserializer when present', function(done) {
+    it('should apply the unmarshalr when present', function(done) {
       var msg = 'some text';
       var suffix = new Buffer(msg);
       var prefix = new Buffer(5);
       prefix.writeUIntBE(0, 0, 1);
       prefix.writeUIntBE(Buffer.byteLength(msg), 1, 4);
       var encoded = Buffer.concat([prefix, suffix]);
-      decodeMessage(encoded, {deserialize: irreverser}, function(err, s) {
+      decodeMessage(encoded, {unmarshal: irreverser}, function(err, s) {
         expect(err).to.be.null;
         expect(s).to.eql('txet emos');
         done();
@@ -287,14 +278,14 @@ describe('codec', function() {
         done();
       });
     });
-    it('should apply the serialize when present', function(done) {
+    it('should apply the marshal when present', function(done) {
       var msg = 'some text';
       var suffix = reverser(msg);
       var prefix = new Buffer(5);
       prefix.writeUIntBE(0, 0, 1);
       prefix.writeUIntBE(Buffer.byteLength(msg), 1, 4);
       var want = Buffer.concat([prefix, suffix]);
-      encodeMessage(msg, {serialize: reverser}, function(got) {
+      encodeMessage(msg, {marshal: reverser}, function(got) {
         expect(got).to.eql(want);
         done();
       });

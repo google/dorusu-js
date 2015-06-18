@@ -136,3 +136,14 @@ exports.shuffleBuffers = function shuffleBuffers(buffers) {
 
   return output;
 };
+
+// reverser is used as a test serialization func
+exports.reverser = function reverser(s) {
+  var r = s.toString().split('').reverse().join('');
+  return new Buffer(r);
+};
+
+// irreverser is used as a test deserialization func
+exports.irreverser = function irreverser(s) {
+  return s.toString().split('').reverse().join('');
+};

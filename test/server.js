@@ -63,7 +63,7 @@ describe('RpcServer', function() {
     describe(connType + ': `server.makeDispatcher`', function() {
       it('should respond with rpcCode 404 for empty table', function(done) {
         var thisClient = function(srv, stub) {
-          stub.request_response(path, msg, {}, function(response) {
+          stub.post(path, msg, {}, function(response) {
             var theStatus;
             var theError;
             response.on('data', _.noop);
@@ -92,7 +92,7 @@ describe('RpcServer', function() {
       });
       it('should respond with rpcCode 404 for unknown routes', function(done) {
         var thisClient = function(srv, stub) {
-          stub.request_response(path, msg, {}, function(response) {
+          stub.post(path, msg, {}, function(response) {
             var theStatus;
             var theError;
             response.on('data', _.noop);
@@ -124,7 +124,7 @@ describe('RpcServer', function() {
       });
       it('should respond for configured routes', function(done) {
         var thisClient = function(srv, stub) {
-          stub.request_response(path, msg, {}, function(response) {
+          stub.post(path, msg, {}, function(response) {
             var theStatus;
             var theError;
             response.on('data', _.noop);
@@ -153,7 +153,7 @@ describe('RpcServer', function() {
     describe(connType + ': `server.notFound`', function() {
       it('should respond with rpcCode 404', function(done) {
         var thisClient = function(srv, stub) {
-          stub.request_response(path, msg, {}, function(response) {
+          stub.post(path, msg, {}, function(response) {
             var theStatus;
             var theError;
             response.on('data', _.noop);
@@ -184,7 +184,7 @@ describe('RpcServer', function() {
     describe(connType + ': simple request/response', function() {
       it('should work as expected', function(done) {
         var thisClient = function(srv, stub) {
-          stub.request_response(path, msg, {}, function(response) {
+          stub.post(path, msg, {}, function(response) {
             var theStatus;
             var theError;
             response.on('data', function(data) {
@@ -199,7 +199,7 @@ describe('RpcServer', function() {
             response.on('end', function() {
               expect(theStatus).to.deep.equal({
                 'message': '',
-                'code': 0
+                'code': nurpc.rpcCode('OK')
               });
               expect(theError).to.be.undefined;
               srv.close();
@@ -221,7 +221,7 @@ describe('RpcServer', function() {
       });
       it('should can receive status and status messages', function(done) {
         var thisClient = function(srv, stub) {
-          stub.request_response(path, msg, {}, function(response) {
+          stub.post(path, msg, {}, function(response) {
             var theStatus;
             var theError;
             response.on('data', function(data) {
@@ -264,7 +264,7 @@ describe('RpcServer', function() {
       it('should send non-binary trailers ok', function(done) {
         var want = _.clone(nonBinMd);
         var thisClient = function(srv, stub) {
-          stub.request_response(path, msg, {}, function(response) {
+          stub.post(path, msg, {}, function(response) {
             var got;
             response.on('data', function(data) {
               expect(data.toString()).to.equal(reply);
@@ -294,7 +294,7 @@ describe('RpcServer', function() {
       it('should send non-binary headers ok', function(done) {
         var want = _.clone(nonBinMd);
         var thisClient = function(srv, stub) {
-          stub.request_response(path, msg, {}, function(response) {
+          stub.post(path, msg, {}, function(response) {
             var got;
             response.on('data', function(data) {
               expect(data.toString()).to.equal(reply);
@@ -326,7 +326,7 @@ describe('RpcServer', function() {
       it('should send binary headers ok', function(done) {
         var want = _.clone(binMdEx);
         var thisClient = function(srv, stub) {
-          stub.request_response(path, msg, {}, function(response) {
+          stub.post(path, msg, {}, function(response) {
             var got;
             response.on('data', function(data) {
               expect(data.toString()).to.equal(reply);
@@ -358,7 +358,7 @@ describe('RpcServer', function() {
       it('should send binary trailers ok', function(done) {
         var want = _.clone(binMdEx);
         var thisClient = function(srv, stub) {
-          stub.request_response(path, msg, {}, function(response) {
+          stub.post(path, msg, {}, function(response) {
             var got;
             response.on('data', function(data) {
               expect(data.toString()).to.equal(reply);
@@ -387,7 +387,7 @@ describe('RpcServer', function() {
       });
       it('should receive a good timeout OK', function(done) {
         var thisClient = function(srv, stub) {
-          stub.request_response(path, msg, timeoutOpts, function(response) {
+          stub.post(path, msg, timeoutOpts, function(response) {
             response.on('data', function(data) {
               expect(data.toString()).to.equal(reply);
             });
@@ -411,7 +411,7 @@ describe('RpcServer', function() {
       });
       it('should receive non-binary headers OK', function(done) {
         var thisClient = function(srv, stub) {
-          stub.request_response(path, msg, nonBinMd, function(response) {
+          stub.post(path, msg, nonBinMd, function(response) {
             response.on('data', _.noop);
             response.on('end', function() { srv.close() });
           });
@@ -431,7 +431,7 @@ describe('RpcServer', function() {
       });
       it('should receive binary headers OK', function(done) {
         var thisClient = function(srv, stub) {
-          stub.request_response(path, msg, binMd, function(response) {
+          stub.post(path, msg, binMd, function(response) {
             response.on('data', _.noop);
             response.on('end', function() { srv.close() });
           });
