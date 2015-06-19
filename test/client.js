@@ -166,6 +166,30 @@ describe('RpcClient', function() {
       });
     });
     describe(connType + ': headers', function() {
+      it('should update headers via options.updateHeaders', function(done) {
+        var headerName = 'name';
+        var headerValue = 'value';
+        var server = createServer(serverOpts, function(request, response) {
+          expect(request.headers[headerName]).to.equal(headerValue);
+          server.close();
+          done();
+        });
+
+        // thisTest sends a test header that gets add via the updateHeaders
+        // callback option.
+        var thisTest = function(srv, stub) {
+          stub.post(path, msg, {}, _.noop);
+        };
+        var fullOpts = {
+          updateHeaders: function(path, headers, cb) {
+            headers = headers || {};
+            headers[headerName] = headerValue;
+            cb(headers);
+          }
+        };
+        _.merge(fullOpts, serverOpts);
+        checkClient(server, thisTest, fullOpts);
+      });
       describe('single-valued, non-reserved', function() {
         it('should send headers when provided', function(done) {
           var headerName = 'name';
