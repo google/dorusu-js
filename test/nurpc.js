@@ -50,7 +50,7 @@ describe('nurpc', function() {
 
   describe('method `rpcCode`', function() {
     it('should throw an exception for unknown names', function() {
-      expect(function() { nurpc.rpcCode('foo'); }).to.throw(Error);
+      expect(function() { nurpc.rpcCode('foo'); }).to.throw(RangeError);
     });
     nurpc.rpcCodes.forEach(function(c) {
       it('should return a valid code for ' + c, function() {

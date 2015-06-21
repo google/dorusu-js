@@ -57,7 +57,7 @@ describe('codec', function() {
         var shouldThrow = function shouldThrow() {
           microsToInterval(Math.pow(10, 8) * 3600 * _1e6);
         };
-        expect(shouldThrow).to.throw(Error);
+        expect(shouldThrow).to.throw(RangeError);
       });
     });
     var invalidIntervals = [
@@ -65,7 +65,7 @@ describe('codec', function() {
       '9x9M',
       'notANumber',
       '1000',
-      'm1000',
+      'm1000'
     ];
     describe('intervalToMicros', function() {
       intervalTests.forEach(function(t) {
@@ -83,7 +83,7 @@ describe('codec', function() {
           var shouldThrow = function shouldThrow() {
             intervalToMicros(t);
           };
-          expect(shouldThrow).to.throw(Error);
+          expect(shouldThrow).to.throw(RangeError);
         });
       });
     });

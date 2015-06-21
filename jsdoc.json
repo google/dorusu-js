@@ -1,0 +1,18 @@
+{
+  "tags": {
+    "allowUnknownTags": true
+  },
+  "source": {
+    "include": [
+      "lib/app.js",
+      "lib/client.js",
+      "lib/codec.js",
+      "lib/nurpc.js",
+      "lib/server.js"
+    ]
+  },
+  "opts": {
+    "destination": "docs"
+  },
+  "plugins": ["plugins/markdown"]
+}

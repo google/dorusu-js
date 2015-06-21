@@ -1,13 +1,13 @@
 {
   "name": "xxx-tbetbetbe-nurpc",
   "version": "0.1.0",
-  "description": "An implementation of gRPC in javascript",
+  "description": "An implementation of gRPC protocol in javascript",
   "main": "index.js",
   "devDependencies": {
-    "istanbul": "*",
-    "chai": "*",
-    "mocha": "*",
-    "docco": "*",
+    "istanbul": "~0.3.15",
+    "chai": "~3.0.0",
+    "mocha": "~2.2.5",
+    "jsdoc": "~3.3.2",
     "bunyan": "*"
   },
   "dependencies": {
@@ -16,6 +16,7 @@
     "lodash": "~3.9.2"
   },
   "scripts": {
+    "doc": "jsdoc -c jsdoc.json",
     "test": "istanbul test _mocha -- --reporter spec --slow 500 --timeout 5000"
   },
   "author": "Timothy Emiola",
