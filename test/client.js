@@ -1,6 +1,8 @@
 'use strict';
 
 var _ = require('lodash');
+var app = require('../lib/app');
+var buildClient = require('../lib/client').buildClient;
 var clientLog = require('./util').clientLog;
 var decodeMessage = require('../lib/codec').decodeMessage;
 var encodeMessage = require('../lib/codec').encodeMessage;
@@ -30,14 +32,89 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
 http2.globalAgent = new http2.Agent({ log: clientLog });
 
-describe('RpcClient', function() {
+var testOptions = {
+  secure: secureOptions,
+  insecure: insecureOptions
+};
+
+describe('Service Client', function() {
+  var msg = 'hello';
+  var reply = 'world';
+  var testService = app.Service('test', [
+    app.Method('do_echo', reverser, irreverser),
+    app.Method('do_reverse', reverser),
+    app.Method('do_irreverse', null, reverser)
+  ]);
+  _.forEach(testOptions, function(serverOpts, connType) {
+    describe(connType + ': function `buildClient(service)`', function() {
+      it('should build a constructor that adds the expected methods', function() {
+        var testClient = buildClient(testService);
+        expect(testClient).to.be.a('function');
+        var instance = new testClient('http://localhost:8080/dummy/path');
+        expect(instance.doEcho).to.be.a('function');
+        expect(instance.doReverse).to.be.a('function');
+        expect(instance.doIrreverse).to.be.a('function');
+      });
+      it('should send multixple messages ok', function(done) {
+        // thisTest checks that the expected text is in the reply, and that the
+        // server received two messages.
+        var count = 0;
+        var thisTest = function(srv, stub) {
+          var msgs = Readable();
+          msgs.push(msg);
+          msgs.push(msg);
+          msgs.push(null);
+          stub.doEcho(msgs, {}, function(response) {
+            var theStatus;
+            var theError;
+            response.on('data', function(data) {
+              expect(data.toString()).to.equal(msg);
+            });
+            response.on('status', function(status) {
+              theStatus = status;
+            });
+            response.on('error', function(err) {
+              theError = err;
+            });
+            response.on('end', function() {
+              expect(theStatus).to.deep.equal({
+                'message': '',
+                'code': nurpc.rpcCode('OK')
+              });
+              expect(theError).to.be.undefined;
+              expect(count).to.eql(2);
+              srv.close();
+              done();
+            });
+          });
+        };
+        var wantedMsg = reverser(msg).toString();
+        var thisServer = function(request, response) {
+          expect(request.url).to.equal('/test/do_echo');
+          var validateReqThenRespond = function(err, decoded){
+            expect(decoded.toString()).to.equal(wantedMsg);
+            if (count == 2) {
+              encodeMessage(decoded, null,
+                            makeSendEncodedResponse(response));
+            }
+          };
+          request.on('data', function(data) {
+            count += 1;
+            response.addTrailers({'grpc-status': nurpc.rpcCode('OK')});
+            decodeMessage(data, null, validateReqThenRespond);
+          });
+        };
+        var testClient = buildClient(testService);
+        checkServiceClientAndServer(testClient, thisTest, thisServer, serverOpts);
+      });
+    });
+  });
+});
+
+describe('Base RPC Client', function() {
   var path = '/x';
   var msg = 'hello';
   var reply = 'world';
-  var testOptions = {
-    secure: secureOptions,
-    insecure: insecureOptions
-  };
   _.forEach(testOptions, function(serverOpts, connType) {
     var createServer = http2.createServer;
     if (connType == 'insecure') {
@@ -726,4 +803,20 @@ function makeSendEncodedResponse(response) {
   return function sendEncodedResponse(encoded) {
     response.end(encoded);
   };
+}
+
+function checkServiceClient(clientCls, server, clientExpects, opts) {
+  listenOnFreePort(server, function(addr, server) {
+    var stubOpts = {};
+    _.merge(stubOpts, addr, opts);
+    clientExpects(server, new clientCls(stubOpts));
+  });
+}
+
+function checkServiceClientAndServer(
+  clientCls, clientExpects, serverExpects, opts) {
+  checkServiceClient(
+    clientCls, makeServer(opts, serverExpects),
+    clientExpects,
+    opts);
 }
