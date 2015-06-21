@@ -55,7 +55,7 @@ describe('Service Client', function() {
         expect(instance.doReverse).to.be.a('function');
         expect(instance.doIrreverse).to.be.a('function');
       });
-      it('should send multixple messages ok', function(done) {
+      it('should send multiple messages ok', function(done) {
         // thisTest checks that the expected text is in the reply, and that the
         // server received two messages.
         var count = 0;
@@ -64,7 +64,7 @@ describe('Service Client', function() {
           msgs.push(msg);
           msgs.push(msg);
           msgs.push(null);
-          stub.doEcho(msgs, {}, function(response) {
+          stub.doEcho(msgs, function(response) {
             var theStatus;
             var theError;
             response.on('data', function(data) {
@@ -149,7 +149,7 @@ describe('Base RPC Client', function() {
             msgs.push(msg);
             msgs.push(msg);
             msgs.push(null);
-            call(path, msgs, {}, function(response) {
+            call(path, msgs, function(response) {
               var theStatus;
               var theError;
               response.on('data', function(data) {
@@ -203,8 +203,8 @@ describe('Base RPC Client', function() {
           // thisTest checks that the expected text is in the reply, i.e, it
           // has been decoded successfully.
           var thisTest = function(srv, stub) {
-            var call = stub.postFunc(opts.marshal, opts.unmarshal);
-            call(path, msg, {}, function(response) {
+            var call = stub.rpcFunc(opts.marshal, opts.unmarshal);
+            call(path, msg, function(response) {
               var theStatus;
               var theError;
               response.on('data', function(data) {
@@ -255,7 +255,7 @@ describe('Base RPC Client', function() {
         // thisTest sends a test header that gets add via the updateHeaders
         // callback option.
         var thisTest = function(srv, stub) {
-          stub.post(path, msg, {}, _.noop);
+          stub.post(path, msg, _.noop);
         };
         var fullOpts = {
           updateHeaders: function(path, headers, cb) {
@@ -281,7 +281,7 @@ describe('Base RPC Client', function() {
           var headers = {};
           headers[headerName] = headerValue;
           var thisTest = function(srv, stub) {
-            stub.post(path, msg, headers, _.noop);
+            stub.post(path, msg, _.noop, {headers: headers});
           };
           checkClient(server, thisTest, serverOpts);
         });
@@ -300,7 +300,7 @@ describe('Base RPC Client', function() {
           var headers = {};
           headers[headerName] = headerValue;
           var thisTest = function(srv, stub) {
-            stub.post(path, msg, headers, _.noop);
+            stub.post(path, msg, _.noop, {headers: headers});
           };
           checkClient(server, thisTest, serverOpts);
         });
@@ -319,7 +319,7 @@ describe('Base RPC Client', function() {
           var headers = {};
           headers[headerName] = headerValue;
           var thisTest = function(srv, stub) {
-            stub.post(path, msg, headers, _.noop);
+            stub.post(path, msg, _.noop, {headers: headers});
           };
           checkClient(server, thisTest, serverOpts);
         });
@@ -338,7 +338,7 @@ describe('Base RPC Client', function() {
           var headers = {};
           headers[headerName] = headerValue;
           var thisTest = function(srv, stub) {
-            stub.post(path, msg, headers, _.noop);
+            stub.post(path, msg, _.noop, {headers: headers});
           };
           checkClient(server, thisTest, serverOpts);
         });
@@ -361,7 +361,7 @@ describe('Base RPC Client', function() {
           var headers = {};
           headers[headerName] = headerValue;
           var thisTest = function(srv, stub) {
-            stub.post(path, msg, headers, _.noop);
+            stub.post(path, msg, _.noop, {headers: headers});
           };
           checkClient(server, thisTest, serverOpts);
         });
@@ -383,7 +383,7 @@ describe('Base RPC Client', function() {
           var headers = {};
           headers[headerName] = headerValue;
           var thisTest = function(srv, stub) {
-            stub.post(path, msg, headers, _.noop);
+            stub.post(path, msg, _.noop, {headers: headers});
           };
           checkClient(server, thisTest, serverOpts);
         });
@@ -397,7 +397,7 @@ describe('Base RPC Client', function() {
             // TODO: investigate a way of writing EncodedOutgoingRequest._start
             // so that error handling of this case is simpler
             try {
-              var req = stub.post(path, msg, headers, _.noop);
+              var req = stub.post(path, msg, _.noop, {headers: headers});
               req.on('error', function(){
                 // This works when the timeout is bad for secure requests
                 srv.close();
@@ -424,7 +424,7 @@ describe('Base RPC Client', function() {
           var headers = {};
           headers[headerName] = headerValue;
           var thisTest = function(srv, stub) {
-            stub.post(path, msg, headers, _.noop);
+            stub.post(path, msg, _.noop, {headers: headers});
           };
           checkClient(server, thisTest, serverOpts);
         });
@@ -436,7 +436,7 @@ describe('Base RPC Client', function() {
           testDeadline.setTime(nowPlus10);
           headers['deadline'] = testDeadline;
           var thisTest = function(srv, stub) {
-            stub.post(path, msg, headers, _.noop);
+            stub.post(path, msg, _.noop, {headers: headers});
           };
 
           var server = createServer(serverOpts, function(request, response) {
@@ -454,7 +454,7 @@ describe('Base RPC Client', function() {
           testDeadline.setTime(nowPlusHalfSec);
           headers['deadline'] = testDeadline;
           var thisTest = function(srv, stub) {
-            var req = stub.post(path, msg, headers, _.noop);
+            var req = stub.post(path, msg, _.noop, {headers: headers});
             req.on('cancel', function() {
               srv.close();
               expect(Date.now()).to.be.above(nowPlusHalfSec);
@@ -474,7 +474,7 @@ describe('Base RPC Client', function() {
       it('only emits a metadata event when any is present', function(done) {
         // thisTest checks that no metadata is set
         var thisTest = function(srv, stub) {
-          stub.post(path, msg, {}, function(response) {
+          stub.post(path, msg, function(response) {
             var metadataFired = false;
             response.on('data', _.noop);
             response.on('metadata', function(md) {
@@ -507,7 +507,7 @@ describe('Base RPC Client', function() {
       it('should include any unreserved headers', function(done) {
         // thisTest checks that the metadata includes expected headers
         var thisTest = function(srv, stub) {
-          stub.post(path, msg, {}, function(response) {
+          stub.post(path, msg, function(response) {
             var theMetadata = undefined;
             var want = {
               'my-header': 'my-header-value',
@@ -546,7 +546,7 @@ describe('Base RPC Client', function() {
         // thisTest checks that multi-value metadata is propagated as an
         // array.
         var thisTest = function(srv, stub) {
-          stub.post(path, msg, {}, function(response) {
+          stub.post(path, msg, function(response) {
             var theMetadata = undefined;
             response.on('data', _.noop);
             response.on('metadata', function(md) {
@@ -583,7 +583,7 @@ describe('Base RPC Client', function() {
         var buf = new Buffer('\u00bd + \u00bc = \u00be');
         // thisTest checks that binary metadata is decoded into a Buffer.
         var thisTest = function(srv, stub) {
-          stub.post(path, msg, {}, function(response) {
+          stub.post(path, msg, function(response) {
             var theMetadata = undefined;
             response.on('data', _.noop);
             response.on('metadata', function(md) {
@@ -621,7 +621,7 @@ describe('Base RPC Client', function() {
         // thisTest checks that multi-value binary metadata is decoded into
         // buffers.
         var thisTest = function(srv, stub) {
-          stub.post(path, msg, {}, function(response) {
+          stub.post(path, msg, function(response) {
             var theMetadata = undefined;
             response.on('data', _.noop);
             response.on('metadata', function(md) {
@@ -676,7 +676,7 @@ describe('Base RPC Client', function() {
                   done();
                 });
               };
-              stub.post(path, msg, {}, checkError);
+              stub.post(path, msg, checkError);
             };
 
             var thisServer = function(request, response) {
@@ -701,7 +701,7 @@ describe('Base RPC Client', function() {
         var code = 14014;
         var message = 'code is fourteen-o-fourteen';
         var thisTest = function(srv, stub) {
-          stub.post(path, msg, {}, function(response) {
+          stub.post(path, msg, function(response) {
             var theStatus;
             var theError;
             response.on('data', _.noop);
@@ -742,7 +742,7 @@ describe('Base RPC Client', function() {
       it('should cancel a request ok', function(done) {
         // thisTest makes a request then cancels it.
         var thisTest = function(srv, stub) {
-          var req = stub.post(path, msg, {}, _.noop);
+          var req = stub.post(path, msg, _.noop);
           req.cancel();
           req.on('cancel', function() {
             srv.close();
@@ -760,7 +760,7 @@ describe('Base RPC Client', function() {
       it('should abort a request ok', function(done) {
         // thisTest makes a request then aborts it.
         var thisTest = function(srv, stub) {
-          var req = stub.post(path, msg, {}, _.noop);
+          var req = stub.post(path, msg, _.noop);
           req.abort();
           req.on('cancel', function() {
             srv.close();

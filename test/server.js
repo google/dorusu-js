@@ -90,7 +90,7 @@ describe('RpcServer', function() {
     describe(connType + ': `server with an app', function() {
       it('should use the fallback on unknown routes', function(done) {
         var thisClient = function(srv, stub) {
-          stub.post(path, msg, {}, function(response) {
+          stub.post(path, msg, function(response) {
             var theStatus;
             var theError;
             response.on('data', _.noop);
@@ -127,7 +127,7 @@ describe('RpcServer', function() {
       });
       it('should use `nurpc.notFound` as the default fallback', function(done) {
         var thisClient = function(srv, stub) {
-          stub.post(path, msg, {}, function(response) {
+          stub.post(path, msg, function(response) {
             var theStatus;
             var theError;
             response.on('data', _.noop);
@@ -159,7 +159,7 @@ describe('RpcServer', function() {
       });
       it('should respond on registered handlers', function(done) {
         var thisClient = function(srv, stub) {
-          stub.post('/test/do_echo', msg, {}, function(response) {
+          stub.post('/test/do_echo', msg, function(response) {
             var theStatus;
             var theError;
             response.on('data', function(data) {
@@ -189,7 +189,7 @@ describe('RpcServer', function() {
       });
       it('should use the specified encoder on the response', function(done) {
         var thisClient = function(srv, stub) {
-          stub.post('/test/do_reverse', msg, {}, function(response) {
+          stub.post('/test/do_reverse', msg, function(response) {
             var want = reverser(msg);
             response.on('data', function(data) {
               expect(data).to.eql(want);
@@ -208,7 +208,7 @@ describe('RpcServer', function() {
       it('should use the specified decoder on the request', function(done) {
         var thisClient = function(srv, stub) {
           var sent = reverser(msg).toString();
-          stub.post('/test/do_irreverse', sent, {}, function(response) {
+          stub.post('/test/do_irreverse', sent, function(response) {
             response.on('data', function(data) {
               expect(data.toString()).to.eql(msg);
             });
@@ -227,7 +227,7 @@ describe('RpcServer', function() {
     describe(connType + ': `nurpc.makeDispatcher`', function() {
       it('should respond with rpcCode 404 for empty table', function(done) {
         var thisClient = function(srv, stub) {
-          stub.post(path, msg, {}, function(response) {
+          stub.post(path, msg, function(response) {
             var theStatus;
             var theError;
             response.on('data', _.noop);
@@ -256,7 +256,7 @@ describe('RpcServer', function() {
       });
       it('should respond with rpcCode 404 for unknown routes', function(done) {
         var thisClient = function(srv, stub) {
-          stub.post(path, msg, {}, function(response) {
+          stub.post(path, msg, function(response) {
             var theStatus;
             var theError;
             response.on('data', _.noop);
@@ -288,7 +288,7 @@ describe('RpcServer', function() {
       });
       it('should respond for configured routes', function(done) {
         var thisClient = function(srv, stub) {
-          stub.post(path, msg, {}, function(response) {
+          stub.post(path, msg, function(response) {
             var theStatus;
             var theError;
             response.on('data', _.noop);
@@ -317,7 +317,7 @@ describe('RpcServer', function() {
     describe(connType + ': `nurpc.notFound`', function() {
       it('should respond with rpcCode 404', function(done) {
         var thisClient = function(srv, stub) {
-          stub.post(path, msg, {}, function(response) {
+          stub.post(path, msg, function(response) {
             var theStatus;
             var theError;
             response.on('data', _.noop);
@@ -348,7 +348,7 @@ describe('RpcServer', function() {
     describe(connType + ': simple request/response', function() {
       it('should work as expected', function(done) {
         var thisClient = function(srv, stub) {
-          stub.post(path, msg, {}, function(response) {
+          stub.post(path, msg, function(response) {
             var theStatus;
             var theError;
             response.on('data', function(data) {
@@ -385,7 +385,7 @@ describe('RpcServer', function() {
       });
       it('should can receive status and status messages', function(done) {
         var thisClient = function(srv, stub) {
-          stub.post(path, msg, {}, function(response) {
+          stub.post(path, msg, function(response) {
             var theStatus;
             var theError;
             response.on('data', function(data) {
@@ -428,7 +428,7 @@ describe('RpcServer', function() {
       it('should send non-binary trailers ok', function(done) {
         var want = _.clone(nonBinMd);
         var thisClient = function(srv, stub) {
-          stub.post(path, msg, {}, function(response) {
+          stub.post(path, msg, function(response) {
             var got;
             response.on('data', function(data) {
               expect(data.toString()).to.equal(reply);
@@ -458,7 +458,7 @@ describe('RpcServer', function() {
       it('should send non-binary headers ok', function(done) {
         var want = _.clone(nonBinMd);
         var thisClient = function(srv, stub) {
-          stub.post(path, msg, {}, function(response) {
+          stub.post(path, msg, function(response) {
             var got;
             response.on('data', function(data) {
               expect(data.toString()).to.equal(reply);
@@ -490,7 +490,7 @@ describe('RpcServer', function() {
       it('should send binary headers ok', function(done) {
         var want = _.clone(binMdEx);
         var thisClient = function(srv, stub) {
-          stub.post(path, msg, {}, function(response) {
+          stub.post(path, msg, function(response) {
             var got;
             response.on('data', function(data) {
               expect(data.toString()).to.equal(reply);
@@ -522,7 +522,7 @@ describe('RpcServer', function() {
       it('should send binary trailers ok', function(done) {
         var want = _.clone(binMdEx);
         var thisClient = function(srv, stub) {
-          stub.post(path, msg, {}, function(response) {
+          stub.post(path, msg, function(response) {
             var got;
             response.on('data', function(data) {
               expect(data.toString()).to.equal(reply);
@@ -551,7 +551,7 @@ describe('RpcServer', function() {
       });
       it('should receive a good timeout OK', function(done) {
         var thisClient = function(srv, stub) {
-          stub.post(path, msg, timeoutOpts, function(response) {
+          stub.post(path, msg, function(response) {
             response.on('data', function(data) {
               expect(data.toString()).to.equal(reply);
             });
@@ -559,7 +559,7 @@ describe('RpcServer', function() {
               srv.close();
               done();
             });
-          });
+          }, {headers: timeoutOpts});
         };
         // thisTest sets up the client to receive non-binary headers.
         var thisTest = function(request, response) {
@@ -575,10 +575,10 @@ describe('RpcServer', function() {
       });
       it('should receive non-binary headers OK', function(done) {
         var thisClient = function(srv, stub) {
-          stub.post(path, msg, nonBinMd, function(response) {
+          stub.post(path, msg, function(response) {
             response.on('data', _.noop);
             response.on('end', function() { srv.close() });
-          });
+          }, {headers: nonBinMd});
         };
         // thisTest checks that the server receives non-binary metadata
         var thisTest = function(request, response) {
@@ -595,10 +595,10 @@ describe('RpcServer', function() {
       });
       it('should receive binary headers OK', function(done) {
         var thisClient = function(srv, stub) {
-          stub.post(path, msg, binMd, function(response) {
+          stub.post(path, msg, function(response) {
             response.on('data', _.noop);
             response.on('end', function() { srv.close() });
-          });
+          }, {headers: binMd});
         };
         // thisTest checks that the server receives non-binary metadata
         var thisTest = function(request, response) {
