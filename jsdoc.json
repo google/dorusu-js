@@ -7,6 +7,7 @@
       "lib/app.js",
       "lib/client.js",
       "lib/codec.js",
+      "lib/protobuf.js",
       "lib/nurpc.js",
       "lib/server.js"
     ]

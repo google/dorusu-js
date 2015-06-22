@@ -13,7 +13,8 @@
   "dependencies": {
     "concat-stream": "~1.4.8",
     "http2": "~3.2.0",
-    "lodash": "~3.9.2"
+    "lodash": "~3.9.2",
+    "protobufjs": "dcodeIO/ProtoBuf.js"
   },
   "scripts": {
     "doc": "jsdoc -c jsdoc.json",
