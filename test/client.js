@@ -744,11 +744,11 @@ describe('Base RPC Client', function() {
         // thisTest makes a request then cancels it.
         var thisTest = function(srv, stub) {
           var req = stub.post(path, msg, _.noop);
-          req.cancel();
           req.on('cancel', function() {
             srv.close();
             done();
           });
+          req.cancel();
         };
 
         var thisServer = function(request, response) {
@@ -762,11 +762,11 @@ describe('Base RPC Client', function() {
         // thisTest makes a request then aborts it.
         var thisTest = function(srv, stub) {
           var req = stub.post(path, msg, _.noop);
-          req.abort();
           req.on('cancel', function() {
             srv.close();
             done();
           });
+          req.abort();
         };
 
         var thisServer = function(request, response) {
