@@ -23,7 +23,7 @@ if (process.env.HTTP2_LOG) {
       name: name,
       stream: logOutput,
       level: process.env.HTTP2_LOG,
-      serializers: require('../lib/http').serializers
+      serializers: http2.protocol.serializers
     });
   };
   exports.log = exports.createLogger('test');
@@ -61,8 +61,7 @@ exports.callNTimes = function callNTimes(limit, done) {
 
 exports.secureOptions = {
   key: fs.readFileSync(path.join(__dirname, '../example/localhost.key')),
-  cert: fs.readFileSync(path.join(__dirname, '../example/localhost.crt')),
-  log: exports.serverLog
+  cert: fs.readFileSync(path.join(__dirname, '../example/localhost.crt'))
 };
 
 exports.insecureOptions = {

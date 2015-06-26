@@ -11,6 +11,7 @@
     "bunyan": "*"
   },
   "dependencies": {
+    "bunyan": "~1.4.1",
     "concat-stream": "~1.4.8",
     "http2": "~3.2.0",
     "lodash": "~3.9.2",

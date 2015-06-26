@@ -2,6 +2,7 @@
 
 var _ = require('lodash');
 var app = require('../lib/app');
+var clientLog = require('./util').clientLog;
 var expect = require('chai').expect;
 var http2 = require('http2');
 var irreverser = require('./util').irreverser;
@@ -11,6 +12,7 @@ var reverser = require('./util').reverser;
 var nurpc = require('../lib/nurpc');
 var secureOptions = require('./util').secureOptions;
 var server = require('../lib/server');
+var serverLog = require('./util').serverLog;
 
 var Stub = require('../lib/client').Stub;
 
@@ -618,6 +620,8 @@ describe('RpcServer', function() {
 });
 
 function makeRpcServer(opts, serverExpects) {
+  opts = _.clone(opts);
+  opts.log = serverLog;
   if (opts.plain) {
     return server.raw.createServer(opts, serverExpects);
   } else {
@@ -628,7 +632,9 @@ function makeRpcServer(opts, serverExpects) {
 function checkClientAndServer(clientExpects, serverExpects, opts) {
   var srv = makeRpcServer(opts, serverExpects);
   listenOnFreePort(srv, function(addr, server) {
-    var stubOpts = {};
+    var stubOpts = {
+      log: clientLog
+    };
     _.merge(stubOpts, addr, opts);
     clientExpects(server, new Stub(stubOpts));
   });

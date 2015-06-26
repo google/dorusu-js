@@ -14,6 +14,7 @@ var listenOnFreePort = require('./util').listenOnFreePort;
 var reverser = require('./util').reverser;
 var nurpc = require('../lib/nurpc');
 var secureOptions = require('./util').secureOptions;
+var serverLog = require('./util').serverLog;
 
 var Readable = require('stream').Readable;
 var Stub = require('../lib/client').Stub;
@@ -781,13 +782,17 @@ describe('Base RPC Client', function() {
 
 function checkClient(server, clientExpects, opts) {
   listenOnFreePort(server, function(addr, server) {
-    var stubOpts = {};
+    var stubOpts = {
+      log: clientLog
+    };
     _.merge(stubOpts, addr, opts);
     clientExpects(server, new Stub(stubOpts));
   });
 }
 
 function makeServer(opts, serverExpects) {
+  opts = _.clone(opts);
+  opts.log = serverLog;
   if (opts.plain) {
     return http2.raw.createServer(opts, serverExpects);
   } else {
@@ -807,7 +812,9 @@ function makeSendEncodedResponse(response) {
 
 function checkServiceClient(clientCls, server, clientExpects, opts) {
   listenOnFreePort(server, function(addr, server) {
-    var stubOpts = {};
+    var stubOpts = {
+      log: clientLog
+    };
     _.merge(stubOpts, addr, opts);
     clientExpects(server, new clientCls(stubOpts));
   });
