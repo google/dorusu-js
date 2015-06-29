@@ -10,7 +10,12 @@
     "jsdoc": "~3.3.2",
     "bunyan": "*"
   },
+  "bin": {
+    "math_client.js": "example/math_client.js",
+    "math_server.js": "example/math_server.js"
+  },
   "dependencies": {
+    "argparse": "1.0.2",
     "async": "~1.2.1",
     "bunyan": "~1.4.1",
     "concat-stream": "~1.4.8",

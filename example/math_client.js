@@ -1,9 +1,27 @@
+#!/usr/bin/env node
 'use strict';
 
 /**
  * nurpc/example/math_client is an example client for the math.Math service.
  *
  * The math.Math service is defined in math.proto.
+ *
+ * Example usage:
+ *
+ * Access the default insecure server
+ * ```sh
+ * $ example/math_client.js
+ * ```
+ *
+ * Access a secure server with info logging
+ * ```sh
+ * $ HTTP2_LOG=info example/math_client.js -h my.domain.io -s 2> >(bunyan)
+ * ```
+ *
+ * Print full usage
+ * ```sh
+ * $ example/math_client.js -h
+ * ```
  *
  * @module nurpc/example/math_client
  */
@@ -18,14 +36,15 @@ var insecureOptions = require('../test/util').insecureOptions;
 var path = require('path');
 var protobuf = require('../lib/protobuf');
 var nurpc = require('../lib/nurpc');
+var secureOptions = require('../test/util').secureClientOptions;
 var server = require('../lib/server');
-var secureOptions = require('../test/util').secureOptions;
 
+var ArgumentParser = require('argparse').ArgumentParser;
 var Readable = require('stream').Readable;
 
-var mathpb = protobuf.loadProto(path.join(__dirname, 'math.proto'));
-var mathClientCls = buildClient(mathpb.math.Math.client);
-var printVerified = false;
+// By default, functions use the (noop) logger; main() assigns a real
+// logger implementation.
+var log = nurpc.noopLogger;
 
 exports.doOkDiv = function doOkDiv(client, next) {
   var done = next || _.noop;
@@ -37,9 +56,7 @@ exports.doOkDiv = function doOkDiv(client, next) {
     response.on('data', function(msg) {
       expect(+msg.quotient).to.eql(2);
       expect(+msg.remainder).to.eql(1);
-      if (printVerified) {
-        console.log('Verified: ok div:', req, 'is', msg);
-      }
+      log.info('Verified: ok div:', req, 'is', msg);
     });
   });
 };
@@ -66,9 +83,7 @@ exports.doStreamDiv = function doStreamDiv(client, next) {
       next_index += 1;
     });
     response.on('status', function(status) {
-      if (printVerified) {
-        console.log('Verified: stream div:', reqs, 'gives', got);
-      }
+      log.info('Verified: stream div:', reqs, 'gives', got);
       done();
     });
   });
@@ -85,9 +100,7 @@ exports.doBadDiv = function doBadDiv(client, next) {
     response.on('data', _.noop);
     response.on('error', function(error) {
       expect(error.code).to.eql(nurpc.rpcCode('INVALID_ARGUMENT'));
-      if (printVerified) {
-        console.log('Verified: bad div:', req, 'fails');
-      }
+      log.info('Verified: bad div:', req, 'fails');
     });
   });
 };
@@ -108,9 +121,7 @@ exports.doOkSum = function doOkSum(client, next) {
   client.sum(sumSrc, function(response) {
     response.on('data', function(msg) {
       expect(+msg.num).to.equal(want);
-      if (printVerified) {
-        console.log('Verified: sum of', pushed, 'is', msg);
-      }
+      log.info('Verified: sum of', pushed, 'is', msg);
     });
     response.on('end', function(status) {
       done(null);
@@ -132,43 +143,87 @@ exports.doOkFib = function doOkFib(client, next) {
       next_index += 1;
     });
     response.on('status', function(status) {
-      if (printVerified) {
-        console.log('Verified: fib of', req, 'is', got);
-      }
+      log.info('Verified: fib of', req, 'is', got);
       done();
     });
   });
 };
 var doOkFib = exports.doOkFib;
 
+var version = '0.1.0'
+/**
+ * parseArgs parses the command line options/arguments when this file is run as
+ * a script.
+ */
+var parseArgs = function parseArgs() {
+  var parser = new ArgumentParser({
+    version: version,
+    addHelp:true,
+    description: 'NuRPC Node.js Math Client example.\n'
+                 + 'It accesses an example Math Server and performs sample'
+                 + ' RPCs.'
+  });
+  parser.addArgument(
+    [ '-a', '--address' ],
+    {
+      help: 'The Math Server hostname',
+      defaultValue: 'localhost'
+    }
+  );
+  parser.addArgument(
+    [ '-p', '--port' ],
+    {
+      defaultValue: 50051,
+      help: 'The Math Server port',
+      type: 'int'
+    }
+  );
+  parser.addArgument(
+    [ '-s', '--use_tls' ],
+    {
+      defaultValue: false,
+      action: 'storeTrue',
+      help: 'When set, indicates that the server should be accessed'
+            + ' securely using the example test credentials.'
+    }
+  );
+  return parser.parseArgs();
+};
 
 /**
- * Provides a command line entry point when this file is run as a script.
+ * main is the command line entry point when this file is run as a script.
  */
 var main = function main() {
-  var log = bunyan.createLogger({
+  log = bunyan.createLogger({
+    level: process.env.HTTP2_LOG || 'info',
     name: 'math_client',
-    stream: process.stderr,
+    stream: process.stdout,
     serializers: http2.serializers
   });
+  var args = parseArgs();
   var opts = {
     log: log,
-    port: 50051,
-    host: 'localhost'
+    port: args.port,
+    host: args.address
   }
-  _.merge(opts, insecureOptions);
+  if (args.use_tls) {
+    _.merge(opts, secureOptions);
+  } else {
+    _.merge(opts, insecureOptions);
+  }
+  var mathpb = protobuf.loadProto(path.join(__dirname, 'math.proto'));
+  var mathClientCls = buildClient(mathpb.math.Math.client);
   var client = new mathClientCls(opts);
   async.series([
     doOkDiv.bind(null, client),
-    // doBadDiv.bind(null, client),
+    doBadDiv.bind(null, client),
     doStreamDiv.bind(null, client),
     doOkSum.bind(null, client),
     doOkFib.bind(null, client),
-    process.exit.bind(null, 0)  /* TODO figure out why this is needed */
+    process.exit.bind(null, 0)  /* TODO: replace once clients have #close */
   ]);
 };
 
 if (require.main === module) {
-  printVerified = true;
   main();
 }

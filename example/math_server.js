@@ -1,11 +1,43 @@
+#!/usr/bin/env node
 'use strict';
 
+/**
+ * nurpc/example/math_server is an server implementing the math.Math service.
+ *
+ * The math.Math service is defined in math.proto.
+ *
+ * Example usage:
+ *
+ * Run the default insecure server
+ * ```sh
+ * $ example/math_server.js
+ * ```
+ *
+ * Run a secure server with info logging on port 8043
+ * ```sh
+ * $ HTTP2_LOG=info example/math_server.js -p 8043 -s 2> >(bunyan)
+ * ```
+ *
+ * Print full usage
+ * ```sh
+ * $ example/math_server.js -h
+ * ```
+ *
+ * @module nurpc/example/math_server
+ */
+
+var _ = require('lodash');
 var app = require('../lib/app');
 var bunyan = require('bunyan');
+var http2 = require('http2');
+var insecureOptions = require('../test/util').insecureOptions;
 var path = require('path');
 var protobuf = require('../lib/protobuf');
 var nurpc = require('../lib/nurpc');
+var secureOptions = require('../test/util').secureOptions;
 var server = require('../lib/server');
+
+var ArgumentParser = require('argparse').ArgumentParser;
 
 /**
  * Implements math server division.
@@ -80,6 +112,39 @@ function mathFib(request, response) {
   });
 }
 
+var version = '0.1.0'
+/**
+ * parseArgs parses the command line options/arguments when this file is run as
+ * a script.
+ */
+var parseArgs = function parseArgs() {
+  var parser = new ArgumentParser({
+    version: version,
+    addHelp:true,
+    description: 'NuRPC Node.js Math Server example.\n'
+                 + 'Runs an example Math Server and handles sample'
+                 + ' RPCs.'
+  });
+  parser.addArgument(
+    [ '-p', '--port' ],
+    {
+      defaultValue: 50051,
+      help: 'The Math Server port',
+      type: 'int'
+    }
+  );
+  parser.addArgument(
+    [ '-s', '--use_tls' ],
+    {
+      defaultValue: false,
+      action: 'storeTrue',
+      help: 'When set, indicates that the server should be accessed'
+            + ' securely using the example test credentials'
+    }
+  );
+  return parser.parseArgs();
+};
+
 /**
  * Builds the `app.RpcApp` that provides the math service implementation
  *
@@ -104,14 +169,25 @@ var buildApp = exports.buildApp = function buildApp() {
 var main = function main() {
   var log = bunyan.createLogger({
     name: 'math_server',
-    stream: process.stderr,
-    serializers: require('http2').serializers
+    stream: process.stdout,
+    level: process.env.HTTP2_LOG || 'info',
+    serializers: http2.serializers
   });
-  var s = server.raw.createServer({
-    log: log,
-    app: buildApp()
-  });
-  s.listen(50051);
+  var opts  =  {
+    app: buildApp(),
+    host: '0.0.0.0',
+    log: log
+  };
+  var args = parseArgs();
+  var s;
+  if (args.use_tls) {
+    _.merge(opts, secureOptions);
+    s = server.createServer(opts);
+  } else {
+    s = server.raw.createServer(opts);
+    _.merge(opts, insecureOptions);
+  }
+  s.listen(args.port);
 };
 
 if (require.main === module) {
