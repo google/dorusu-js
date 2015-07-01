@@ -61,7 +61,10 @@ exports.callNTimes = function callNTimes(limit, done) {
 
 exports.secureOptions = {
   key: fs.readFileSync(path.join(__dirname, '../example/server1.key')),
-  cert: fs.readFileSync(path.join(__dirname, '../example/server1.pem')),
+  cert: fs.readFileSync(path.join(__dirname, '../example/server1.pem'))
+};
+
+exports.secureClientOptions = {
   ca: fs.readFileSync(path.join(__dirname, '../example/ca.pem'))
 };
 
