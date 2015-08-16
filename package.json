@@ -4,23 +4,25 @@
   "description": "An implementation of gRPC protocol in javascript",
   "main": "index.js",
   "devDependencies": {
-    "istanbul": "~0.3.15",
-    "chai": "~3.0.0",
-    "mocha": "~2.2.5",
-    "jsdoc": "~3.3.2",
-    "bunyan": "*"
+    "bunyan": "~1.4",
+    "chai": "~3.0",
+    "istanbul": "~0.3",
+    "jsdoc": "~3.3",
+    "longjohn": "~0.2",
+    "mocha": "~2.2"
   },
   "bin": {
     "math_client.js": "example/math_client.js",
     "math_server.js": "example/math_server.js"
   },
   "dependencies": {
-    "argparse": "1.0.2",
-    "async": "~1.2.1",
-    "bunyan": "~1.4.1",
-    "concat-stream": "~1.4.8",
-    "http2": "~3.2.0",
-    "lodash": "~3.9.2",
+    "argparse": "~1.0",
+    "async": "~1.2",
+    "bunyan": "~1.4",
+    "concat-stream": "~1.4",
+    "fs-extra": "~0.18",
+    "http2": "tbetbetbe/node-http2#rpc-impl-all-changes",
+    "lodash": "~3.9",
     "protobufjs": "dcodeIO/ProtoBuf.js"
   },
   "scripts": {

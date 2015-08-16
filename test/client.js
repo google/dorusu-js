@@ -245,10 +245,13 @@ describe('Base RPC Client', function() {
     });
     describe(connType + ': headers', function() {
       it('should update headers via options.updateHeaders', function(done) {
+        var serviceNameHeader = 'service_name';
         var headerName = 'name';
         var headerValue = 'value';
         var server = createServer(serverOpts, function(request, response) {
+          var wantServiceName = 'https://localhost/testservice'
           expect(request.headers[headerName]).to.equal(headerValue);
+          expect(request.headers[serviceNameHeader]).to.equal(wantServiceName);
           server.close();
           done();
         });
@@ -259,10 +262,12 @@ describe('Base RPC Client', function() {
           stub.post(path, msg, _.noop);
         };
         var fullOpts = {
-          updateHeaders: function(path, headers, cb) {
+          serviceName: 'testservice',
+          updateHeaders: function(serviceName, headers, done) {
             headers = headers || {};
             headers[headerName] = headerValue;
-            cb(headers);
+            headers[serviceNameHeader] = serviceName;
+            done(null, headers);
           }
         };
         _.merge(fullOpts, serverOpts);

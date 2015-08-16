@@ -19,7 +19,7 @@ describe('nurpc', function() {
     var unreservedHeaders =  [
       'myapp-foo',
       'myapp-bar',
-      'x-my-well-known-header',
+      'x-my-well-known-header'
     ];
     unreservedHeaders.forEach(function(h) {
       it('should be false for ' + h, function() {
