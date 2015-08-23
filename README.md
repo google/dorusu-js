@@ -2,8 +2,8 @@
 
 ### Status
 - The interop tests passed on running against another rpc protocol implementation (Ruby/C)
-  - Last Step: Added client and server interop tests + resulting bugfixes
-  - Next Step: Include an external interop test (Go gRPC) in the test suite
+  - Last Step (08/23/2015): Include an external interop test (Go gRPC) in the test suite
+  - Next Step: Include the auth interop tests and verify them manually
 
 ### PREREQUISITES
 - `node`: This requires `node` to be installed. If you instead have the `nodejs` executable on Debian, you should install the [nodejs-legacy][] package.

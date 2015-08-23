@@ -330,6 +330,9 @@ var main = function main() {
   } else {
     _.merge(opts, insecureOptions);
   }
+  if (_.has(args, 'server_host_override')) {
+    process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+  }
   var testpb = protobuf.loadProto(path.join(__dirname, 'test.proto'));
   var interopCtor = buildClient(testpb.grpc.testing.TestService.client);
   var client = new interopCtor(opts);
