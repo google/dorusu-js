@@ -6,6 +6,7 @@
   "devDependencies": {
     "bunyan": "~1.4",
     "chai": "~3.0",
+    "google-auth-library": "~0.9",
     "istanbul": "~0.3",
     "jsdoc": "~3.3",
     "longjohn": "~0.2",
