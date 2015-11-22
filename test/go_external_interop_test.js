@@ -30,6 +30,9 @@ var testOptions = {
   insecure: insecureOptions
 };
 
+/* Need to wait around 4s to ensure Go server is up */
+var startupWaitMillis = 4000;
+
 describe('External Interop: Nodejs/Go', function() {
   var testpb = protobuf.loadProto(path.join(__dirname, '../interop/test.proto'));
   var interopCtor = buildClient(testpb.grpc.testing.TestService.client);
@@ -57,7 +60,7 @@ describe('External Interop: Nodejs/Go', function() {
         makeGoServer(serverOpts, setUpClient);
       });
       after(function() {
-        if (agent.isServerRunning) {
+        if (agent && agent.isServerRunning) {
           serverLog.info('stopping server', {'port': agent.port });
           agent.stopServer();
         }
@@ -147,7 +150,7 @@ function makeGoServer(opts, done) {
       agent.startServer(!insecure, done);
       setTimeout(function() {
         done(null, agent);
-      }, 1000);  /* Need to wait around 1s to ensure Go server is up */
+      }, startupWaitMillis);
     };
     agent._setupAndInstall(agent.testServerDir, startAgentServer);
   };

@@ -198,6 +198,7 @@ GoAgent.prototype.runInteropTest =
     var args = [
       'run', 'client.go',
       '--use_tls=' + useTls,
+      '--use_test_ca=true',
       '--server_host_override=foo.test.google.fr',
       '--server_host=localhost',
       '--server_port=' + opts.port,
@@ -212,20 +213,21 @@ GoAgent.prototype.runInteropTest =
     }, next);
   };
 
+/**
+ * main allows this to be file to be run as a script that installs the Go
+ * interop agent client and server in temporary directory.
+ */
 var main = function main() {
   var agent = new GoAgent();
-  console.log('Agent client dir is ', agent.testClientDir);
+  console.log('Agent client dir is %s', agent.testClientDir);
   agent._setupAndInstall(
     agent.testServerDir,
     function(err) {
       if (err) {
-        console.log("Setup in", agent.testServerDir, "failed", err);
+        console.log('Setup in %s failed: %s', agent.testServerDir, err);
       } else {
-        console.log("Setup in", agent.testServerDir, "succeeded");
+        console.log('Setup in %s succeeded', agent.testServerDir);
       }
-      agent.startServer(false, function(err) {
-        console.log("Start server failed:", err);
-      });
     }
   );
 };
