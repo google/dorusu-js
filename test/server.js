@@ -127,7 +127,7 @@ describe('RpcServer', function() {
         // here, null === no requestListener fallback
         checkClientAndServer(thisClient, fallback, appOptions);
       });
-      it('should use `nurpc.notFound` as the default fallback', function(done) {
+      it('should use `nurpc.unavailable` as the default fallback', function(done) {
         var thisClient = function(srv, stub) {
           stub.post(path, msg, function(response) {
             var theStatus;
@@ -142,11 +142,11 @@ describe('RpcServer', function() {
             response.on('end', function() {
               expect(theStatus).to.deep.equal({
                 'message': '',
-                'code': nurpc.rpcCode('NOT_FOUND')
+                'code': nurpc.rpcCode('UNAVAILABLE')
               });
               expect(theError).to.deep.equal({
                 'message': '',
-                'code': nurpc.rpcCode('NOT_FOUND')
+                'code': nurpc.rpcCode('UNAVAILABLE')
               });
               srv.close();
               done();
@@ -242,11 +242,11 @@ describe('RpcServer', function() {
             response.on('end', function() {
               expect(theStatus).to.deep.equal({
                 'message': '',
-                'code': nurpc.rpcCode('NOT_FOUND')
+                'code': nurpc.rpcCode('UNAVAILABLE')
               });
               expect(theError).to.deep.equal({
                 'message': '',
-                'code': nurpc.rpcCode('NOT_FOUND')
+                'code': nurpc.rpcCode('UNAVAILABLE')
               });
               srv.close();
               done();
@@ -271,11 +271,11 @@ describe('RpcServer', function() {
             response.on('end', function() {
               expect(theStatus).to.deep.equal({
                 'message': '',
-                'code': nurpc.rpcCode('NOT_FOUND')
+                'code': nurpc.rpcCode('UNAVAILABLE')
               });
               expect(theError).to.deep.equal({
                 'message': '',
-                'code': nurpc.rpcCode('NOT_FOUND')
+                'code': nurpc.rpcCode('UNAVAILABLE')
               });
               srv.close();
               done();
@@ -316,7 +316,7 @@ describe('RpcServer', function() {
         checkClientAndServer(thisClient, dispatcher, serverOptions);
       });
     })
-    describe(connType + ': `nurpc.notFound`', function() {
+    describe(connType + ': `nurpc.unavailable`', function() {
       it('should respond with rpcCode 404', function(done) {
         var thisClient = function(srv, stub) {
           stub.post(path, msg, function(response) {
@@ -332,11 +332,11 @@ describe('RpcServer', function() {
             response.on('end', function() {
               expect(theStatus).to.deep.equal({
                 'message': '',
-                'code': nurpc.rpcCode('NOT_FOUND')
+                'code': nurpc.rpcCode('UNAVAILABLE')
               });
               expect(theError).to.deep.equal({
                 'message': '',
-                'code': nurpc.rpcCode('NOT_FOUND')
+                'code': nurpc.rpcCode('UNAVAILABLE')
               });
               srv.close();
               done();
@@ -344,7 +344,7 @@ describe('RpcServer', function() {
           });
         };
 
-        checkClientAndServer(thisClient, nurpc.notFound, serverOptions);
+        checkClientAndServer(thisClient, nurpc.unavailable, serverOptions);
       });
     })
     describe(connType + ': simple request/response', function() {

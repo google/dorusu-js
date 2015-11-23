@@ -69,8 +69,8 @@ function makeServer(opts) {
   opts = _.clone(opts);
   opts.log = serverLog;
   if (opts.plain) {
-    return server.raw.createServer(opts, nurpc.notFound);
+    return server.raw.createServer(opts, nurpc.unavailable);
   } else {
-    return server.createServer(opts, nurpc.notFound);
+    return server.createServer(opts, nurpc.unavailable);
   }
 };
