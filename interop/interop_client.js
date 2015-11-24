@@ -303,6 +303,65 @@ exports.clientStreaming = function clientStreaming(client, next) {
   });
 };
 
+exports.cancelAfterBegin = function cancelAfterBegin(client, next) {
+  var verifyWasCancelled = function verifyWasCancelled(code) {
+    var wantedCode = nurpc.rpcCode('CANCELLED');
+    expect(code).to.equal(wantedCode);
+    log.info('Verified: OK, cancelAfterBegin had cancelled OK');
+    next();
+  };
+
+  // Run the test.
+  var done = next || _.noop;
+  var src = new PassThrough({objectMode: true});
+  var req = client.streamingInputCall(src, _.noop);
+  req.on('cancel', verifyWasCancelled);
+  req.cancel();
+};
+
+exports.cancelAfterFirst = function cancelAfterFirst(client, next) {
+  var done = next || _.noop;
+  var payloadSizes = [27182, 8, 1828, 45904];
+  var responseSizes = [31415, 9, 2653, 58979];
+  var src = new PassThrough({objectMode: true});
+  var index = 0;
+  var nextPing = function nextPing() {
+    if (index === 4) {
+      log.info('cancelAfterFirst: ending after', index, 'pings');
+      src.end();
+    } else {
+      log.info('cancelAfterFirst: writing index:', index);
+      src.write({
+        response_type: 'COMPRESSABLE',
+        response_parameters: [
+          {size: responseSizes[index]}
+        ],
+        payload: {body: zeroes(payloadSizes[index])}
+      });
+    }
+  }
+  var req;
+  var verifyEachMessage = function verifyEachMessage(msg) {
+    log.info('pingPong: receiving index:', index);
+    expect(msg.payload.type).to.eql('COMPRESSABLE');
+    expect(msg.payload.body.lengh, responseSizes[index]);
+    index += 1;
+    if (index == 1 && req) {
+      log.info('... cancelling');
+      req.cancel();
+    }
+  };
+  // Run the test.
+  nextPing();  // start with a ping
+  req = client.fullDuplexCall(src, function(response) {
+    response.on('data', verifyEachMessage);
+  });
+  req.on('cancel', function() {
+    log.info('Verified: cancelAfterFirst sent/received', index, 'msgs');
+    done();
+  });
+};
+
 exports.serverStreaming = function serverStreaming(client, next) {
   var index = 0;
   var done = next || _.noop;
@@ -412,6 +471,8 @@ exports.allWithoutAuth = function allWithoutAuth(client, next) {
  */
 exports.withoutAuthTests = {
   all: exports.allWithoutAuth,
+  cancel_after_begin: exports.cancelAfterBegin,
+  cancel_after_first_response: exports.cancelAfterFirst,
   large_unary: exports.largeUnary,
   empty_unary: exports.emptyUnary,
   client_streaming: exports.clientStreaming,

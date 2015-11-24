@@ -9,7 +9,6 @@
     "google-auth-library": "~0.9",
     "istanbul": "~0.3",
     "jsdoc": "~3.3",
-    "longjohn": "~0.2",
     "mocha": "~2.2"
   },
   "bin": {
@@ -27,7 +26,8 @@
   },
   "scripts": {
     "doc": "jsdoc -c jsdoc.json",
-    "test": "istanbul test _mocha -- --reporter spec --slow 500 --timeout 5000"
+    "test": "istanbul test _mocha -- --reporter spec -i -g 'External Interop' --slow 1000 --timeout 5000",
+    "interop_test": "istanbul test _mocha -- --reporter spec -g 'External Interop'"
   },
   "author": "Timothy Emiola",
   "license": "MIT"

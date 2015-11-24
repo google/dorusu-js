@@ -49,10 +49,12 @@ describe('Interop Client', function() {
       var testCases = [
           'empty_unary',
           'large_unary',
+          'cancel_after_begin',
           'client_streaming',
           'server_streaming',
           'ping_pong',
-          'empty_stream'
+          'empty_stream',
+          'cancel_after_first_response'
       ];
       _.forEach(testCases, function(t) {
         it('should pass the ' + t + ' interop test', function(done) {

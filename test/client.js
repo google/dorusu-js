@@ -457,11 +457,12 @@ describe('Base RPC Client', function() {
           var nowPlusHalfSec = Date.now() + 500; // 500 ms
           testDeadline.setTime(nowPlusHalfSec);
           headers['deadline'] = testDeadline;
+          var wantedCode = nurpc.rpcCode('DEADLINE_EXCEEDED');
           var thisTest = function(srv, stub) {
-            var req = stub.post(path, msg, _.noop, {headers: headers});
-            req.on('cancel', function() {
-              srv.close();
+            var req = stub.post(path, msg, _.noop, { headers: headers});
+            req.on('cancel', function(code) {
               expect(Date.now()).to.be.above(nowPlusHalfSec);
+              expect(wantedCode).to.equal(code);
               done();
             });
           };

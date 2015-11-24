@@ -66,12 +66,14 @@ describe('External Interop Nodejs/Go', function() {
         }
       })
       var testCases = [
-          'empty_unary',
-          'large_unary',
-          'client_streaming',
-          'server_streaming',
-          'ping_pong',
-          'empty_stream'
+        'empty_unary',
+        'large_unary',
+        'cancel_after_begin',
+        'server_streaming',
+        'empty_stream',
+        'ping_pong',
+        'cancel_after_first_response',
+        'client_streaming'
       ];
       _.forEach(testCases, function(t) {
         it('should pass the ' + t + ' interop test', function(done) {
@@ -82,11 +84,20 @@ describe('External Interop Nodejs/Go', function() {
   });
 });
 
+var testServerOptions = {
+  secure: require('../example/certs').serverOptions,
+  insecure: insecureOptions
+};
+
 describe('External Interop Go/Nodejs', function() {
-  var testpb = protobuf.loadProto(path.join(__dirname, '../interop/test.proto'));
+  /* Adjust the test timeout/duration; Go is spawned in a child proc */
+  this.slow(3500);
+  this.timeout(6000);
+
+  var testpb = protobuf.loadProto(TEST_PROTO_PATH);
   var interopCtor = buildClient(testpb.grpc.testing.TestService.client);
   var theAgent, server, serverAddr;
-  _.forEach(testOptions, function(serverOpts, connType) {
+  _.forEach(testServerOptions, function(serverOpts, connType) {
     describe(connType, function() {
       before(function(done) {
         serverOpts.app = buildApp();
@@ -143,14 +154,11 @@ function makeGoServer(opts, done) {
     agent = new GoAgent(agentOpts);
     var insecure = !!opts.plain;
     var startAgentServer =  function(err) {
-      if (err != null) {
+      if (err) {
         done(err);
         return;
       }
       agent.startServer(!insecure, done);
-      setTimeout(function() {
-        done(null, agent);
-      }, startupWaitMillis);
     };
     agent._setupAndInstall(agent.testServerDir, startAgentServer);
   };
