@@ -13,7 +13,7 @@ var irreverser = require('./util').irreverser;
 var listenOnFreePort = require('./util').listenOnFreePort;
 var reverser = require('./util').reverser;
 var nurpc = require('../lib/nurpc');
-var secureOptions = require('./util').secureOptions;
+var secureOptions = require('../example/certs').options;
 var serverLog = require('./util').serverLog;
 
 var Readable = require('stream').Readable;
@@ -28,8 +28,6 @@ var Stub = require('../lib/client').Stub;
 // - verify behaviour on the server using the http2 library + decodeMessage
 // - respond using the http2 library + encodeMessage
 // - verify the expected client response
-
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
 http2.globalAgent = new http2.Agent({ log: clientLog });
 

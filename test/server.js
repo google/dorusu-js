@@ -10,7 +10,7 @@ var insecureOptions = require('./util').insecureOptions;
 var listenOnFreePort = require('./util').listenOnFreePort;
 var reverser = require('./util').reverser;
 var nurpc = require('../lib/nurpc');
-var secureOptions = require('./util').secureOptions;
+var secureOptions = require('../example/certs').serverOptions;
 var server = require('../lib/server');
 var serverLog = require('./util').serverLog;
 

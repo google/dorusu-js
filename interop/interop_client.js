@@ -41,7 +41,7 @@ var path = require('path');
 var protobuf = require('../lib/protobuf');
 var nurpc = require('../lib/nurpc');
 var server = require('../lib/server');
-var secureOptions = require('../test/util').secureClientOptions;
+var secureOptions = require('../example/certs').clientOptions;
 
 var ArgumentParser = require('argparse').ArgumentParser;
 var Readable = require('stream').Readable;
@@ -477,7 +477,7 @@ var parseArgs = function parseArgs() {
   parser.addArgument(
     [ '-c', '--use_test_ca' ],
     {
-      defaultValue: true,
+      defaultValue: false,
       action: 'storeTrue',
       help: 'When set, TLS connections use the test CA certificate'
     }
@@ -538,9 +538,9 @@ var main = function main() {
   } else {
     _.merge(opts, insecureOptions);
   }
-  if (_.has(args, 'server_host_override')) {
-    process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
-  }
+  // if (_.has(args, 'server_host_override')) {
+  //   process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+  // }
   var testpb = protobuf.loadProto(path.join(__dirname, 'test.proto'));
   var interopCtor = buildClient(testpb.grpc.testing.TestService.client);
 

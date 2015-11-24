@@ -37,7 +37,7 @@ var insecureOptions = require('../test/util').insecureOptions;
 var path = require('path');
 var protobuf = require('../lib/protobuf');
 var nurpc = require('../lib/nurpc');
-var secureOptions = require('../test/util').secureOptions;
+var secureOptions = require('../example/certs').serverOptions;
 var server = require('../lib/server');
 
 var ArgumentParser = require('argparse').ArgumentParser;
@@ -195,6 +195,7 @@ var parseArgs = function parseArgs() {
  * Provides a command line entry point when this file is run as a script.
  */
 var main = function main() {
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
   var log = bunyan.createLogger({
     name: 'interop_server',
     stream: process.stdout,

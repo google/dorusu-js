@@ -15,29 +15,29 @@ var nextAvailablePort = require('./util').nextAvailablePort;
 var nurpc = require('../lib/nurpc');
 var path = require('path');
 var protobuf = require('../lib/protobuf');
-var secureOptions = require('./util').secureOptions;
 var server = require('../lib/server')
 
 var GoAgent = require('../interop/go_interop_agent').GoAgent;
 var Readable = require('stream').Readable;
 
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
-
 http2.globalAgent = new http2.Agent({ log: clientLog });
 
-var testOptions = {
-  secure: secureOptions,
+var testClientOptions = {
+  secure: require('../example/certs').clientOptions,
   insecure: insecureOptions
 };
 
-/* Need to wait around 4s to ensure Go server is up */
-var startupWaitMillis = 4000;
+var TEST_PROTO_PATH = path.join(__dirname, '../interop/test.proto');
 
-describe('External Interop: Nodejs/Go', function() {
-  var testpb = protobuf.loadProto(path.join(__dirname, '../interop/test.proto'));
+describe('External Interop Nodejs/Go', function() {
+  /* Adjust the test timeout/duration; Go is spawned in a child proc */
+  this.slow(5000);
+  this.timeout(8000);
+
+  var testpb = protobuf.loadProto(TEST_PROTO_PATH);
   var interopCtor = buildClient(testpb.grpc.testing.TestService.client);
   var theClient, agent;
-  _.forEach(testOptions, function(serverOpts, connType) {
+  _.forEach(testClientOptions, function(serverOpts, connType) {
     describe(connType, function() {
       before(function(done) {
         serverOpts.app = buildApp();

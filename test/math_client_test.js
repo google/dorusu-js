@@ -14,12 +14,10 @@ var mathClient = require('../example/math_client');
 var nurpc = require('../lib/nurpc');
 var path = require('path');
 var protobuf = require('../lib/protobuf');
-var secureOptions = require('./util').secureOptions;
+var secureOptions = require('../example/certs').options;
 var server = require('../lib/server')
 
 var Readable = require('stream').Readable;
-
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
 http2.globalAgent = new http2.Agent({ log: clientLog });
 
