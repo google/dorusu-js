@@ -21,10 +21,16 @@ var os = require('os');
  * Internal constants
  */
 
+/* Need to wait around 1s to ensure Go server is up */
+var STARTUP_WAIT_MILLIS = 3000;
 var SKIP_REASON = 'Go interop tests are not needed';
 var PKG_NAME = 'google.golang.org/grpc';
 var PKGS = Object.freeze([
   PKG_NAME,
+  'golang.org/x/net/context',
+  'golang.org/x/net/http2',
+  'golang.org/x/net/http2/hpack',
+  'golang.org/x/net/trace',
   'golang.org/x/oauth2',
   'golang.org/x/oauth2/google',
   'golang.org/x/oauth2/jwt'
@@ -153,8 +159,9 @@ GoAgent.prototype._setupAndInstall =
     async.series(tasks, done);
   }
 
-GoAgent.prototype.startServer = function startServer(secure, onError) {
+GoAgent.prototype.startServer = function startServer(secure, done) {
   if (this.isServerRunning) {
+    done(null, this);
     return;
   }
   this.serverPid = null;
@@ -164,20 +171,45 @@ GoAgent.prototype.startServer = function startServer(secure, onError) {
     '--use_tls=' + use_tls,
     '--port=' + this.port
   ]
+  if (this._log) {
+    this._log.info({
+      args: args,
+      cwd: this.testServerDir
+    }, 'Running interop server');
+  }
   var job = child_process.spawn('go', args, {
     cwd: this.testServerDir,
     env: this.testEnv
   });
   job.on('error', function(err) {
-    onError(err);
+    if (this._log) {
+      this._log.error({error: err}, 'Go server crashed');
+    }
   });
   this.serverPid = job.pid;
-  if (this._log) {
-    this._log.info("Started Go interop server", {
-      pid: this.serverPid,
-      port: this.port,
-      running: this.isServerRunning});
-  }
+  var waitForServer = function waitForServer() {
+    if (this.isServerRunning) {
+      if (this._log) {
+        this._log.info({
+          pid: this.serverPid,
+          port: this.port,
+          running: this.isServerRunning
+        }, 'Go Server started OK');
+      }
+      done(null, this);
+    } else {
+      if (this._log) {
+        this._log.info({
+          pid: this.serverPid,
+          port: this.port,
+          running: this.isServerRunning
+        }, 'Go Server did not start OK');
+      }
+      this.stopServer();
+      done(new Error('Go Server startup failed'));
+    }
+  }.bind(this);
+  setTimeout(waitForServer, STARTUP_WAIT_MILLIS);
 }
 
 GoAgent.prototype.stopServer = function stopServer() {
@@ -205,31 +237,46 @@ GoAgent.prototype.runInteropTest =
       '--test_case=' + testCase
     ];
     if (this._log) {
-      this._log.info('Running interop test', args);
+      this._log.info({
+        args: args,
+        cwd: this.testClientDir
+      }, 'Running interop test');
     }
-    child_process.execFile('go', args, {
+    var job = child_process.execFile('go', args, {
       cwd: this.testClientDir,
       env: this.testEnv
     }, next);
+    job.on('error', function(err) {
+      if (this._log) {
+        this._log.error({error: err}, 'Go server failed');
+      }
+    });
   };
 
 /**
  * main allows this to be file to be run as a script that installs the Go
- * interop agent client and server in temporary directory.
+ * interop agent client and server in the temporary directory that will be used
+ * by the interop tests.
  */
 var main = function main() {
   var agent = new GoAgent();
-  console.log('Agent client dir is %s', agent.testClientDir);
-  agent._setupAndInstall(
-    agent.testServerDir,
-    function(err) {
-      if (err) {
-        console.log('Setup in %s failed: %s', agent.testServerDir, err);
-      } else {
-        console.log('Setup in %s succeeded', agent.testServerDir);
+  var setupTargets = {
+      client: agent.testClientDir,
+      server: agent.testServerDir
+  };
+  _.forEach(setupTargets, function(targetDir, name) {
+    console.log('Agent %s directory is %s', name, targetDir);
+    agent._setupAndInstall(
+      targetDir,
+      function(err) {
+        if (err) {
+          console.log('Setup in %s failed: %s', targetDir, err);
+        } else {
+          console.log('Setup in %s succeeded', targetDir);
+        }
       }
-    }
-  );
+    );
+  });
 };
 
 if (require.main === module) {
