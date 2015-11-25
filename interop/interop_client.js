@@ -63,24 +63,34 @@ function zeroes(size) {
 }
 
 exports.emptyUnary = function emptyUnary(client, next) {
-  var verifyMessage = function(msg) {
-    expect(msg).to.eql({});
-    log.info('Verified: ok emptyCall(', req, ') =>', msg);
+  var gotMsg;
+  var saveMessage = function(msg) {
+    gotMsg = msg;
   };
 
   // Run the test.
   var req = {};
+  var onEnd = function() {
+    expect(gotMsg).to.eql({});
+    log.info('Verified: ok emptyCall(', req, ') =>', gotMsg);
+    next();
+  };
   client.emptyCall(req, function(response) {
-    response.on('end', next || _.noop);
-    response.on('data', verifyMessage);
+    response.on('end', onEnd);
+    response.on('data', saveMessage);
   });
 };
 
 exports.largeUnary = function largeUnary(client, next) {
-  var verifyMessage = function(msg) {
-    expect(msg.payload.type).to.eql('COMPRESSABLE');
-    expect(msg.payload.body.length).to.eql(314159);
+  var gotMsg;
+  var saveMessage = function(msg) {
+    gotMsg = msg;
+  };
+  var onEnd = function(msg) {
+    expect(gotMsg.payload.type).to.eql('COMPRESSABLE');
+    expect(gotMsg.payload.body.length).to.eql(314159);
     log.info('Verified: largeUnary(...) => (', msg, ')');
+    next();
   };
 
   // Run the test.
@@ -92,8 +102,8 @@ exports.largeUnary = function largeUnary(client, next) {
     }
   };
   client.unaryCall(req, function(response) {
-    response.on('end', next || _.noop);
-    response.on('data', verifyMessage);
+    response.on('end', onEnd);
+    response.on('data', saveMessage);
   });
 };
 
@@ -105,20 +115,25 @@ var loadWantedEmail = function loadWantedEmail(next) {
   }
   try {
     var creds = require(credsPath);
-    next(null, creds['client_email']);
   } catch (err) {
     next(err);
     return;
   }
+  next(null, creds['client_email']);
 };
 
 exports.computeEngine = function computeEngine(ctor, opts, args, next) {
   var wantedEmail = args.default_service_email_address;
-  var verifyMessage = function verifyMessage(msg) {
-    expect(msg.payload.type).to.eql('COMPRESSABLE');
-    expect(msg.payload.body.length).to.eql(314159);
-    expect(msg.username).to.eql(wantedEmail);
+  var gotMsg;
+  var saveMessage = function(msg) {
+    gotMsg = msg;
+  };
+  var onEnd = function onEnd(msg) {
+    expect(gotMsg.payload.type).to.eql('COMPRESSABLE');
+    expect(gotMsg.payload.body.length).to.eql(314159);
+    expect(gotMsg.username).to.eql(wantedEmail);
     log.info('Verified: computeEngine had email %s', wantedEmail);
+    next();
   };
 
   // Run the test.
@@ -134,24 +149,27 @@ exports.computeEngine = function computeEngine(ctor, opts, args, next) {
   opts.updateHeaders = addAuthFromADC();  // no scope needed on GCE
   var client = new ctor(opts);
   client.unaryCall(req, function(response) {
-    response.on('end', next || _.noop);
-    response.on('data', verifyMessage);
+    response.on('end', onEnd);
+    response.on('data', saveMessage);
   });
 };
 
 exports.jwtTokenCreds = function jwtTokenCreds(ctor, opts, args, next) {
-  var verifyMessage = function verifyMessage(msg) {
+  var gotMsg;
+  var saveMessage = function(msg) {
+    gotMsg = msg;
+  };
+  var onEnd = function onEnd(msg) {
     loadWantedEmail(function(err, wantedEmail) {
       if (err) {
         next(err);
         return;
       }
-      expect(msg.payload.type).to.eql('COMPRESSABLE');
-      expect(msg.payload.body.length).to.eql(314159);
-      expect(msg.oauth_scope).to.not.be.empty;
-      expect(args.oauth_scope).to.have.string(msg.oauth_scope);
-      expect(msg.username).to.eql(wantedEmail);
-      log.info('Verified: serviceAccountCreds had scope %s', msg.oauth_scope);
+      expect(gotMsg.payload.type).to.eql('COMPRESSABLE');
+      expect(gotMsg.payload.body.length).to.eql(314159);
+      expect(gotMsg.username).to.eql(wantedEmail);
+      log.info('Verified: jwtTokenCreds had email %s', gotMsg.username);
+      next();
     });
   };
 
@@ -168,24 +186,29 @@ exports.jwtTokenCreds = function jwtTokenCreds(ctor, opts, args, next) {
     response_type: 'COMPRESSABLE'
   };
   client.unaryCall(req, function(response) {
-    response.on('end', next || _.noop);
-    response.on('data', verifyMessage);
+    response.on('end', onEnd);
+    response.on('data', saveMessage);
   });
 };
 
 exports.oauth2AuthToken = function oauth2AuthToken(ctor, opts, args, next) {
-  var verifyMessage = function verifyMessage(msg) {
+  var gotMsg;
+  var saveMessage = function(msg) {
+    gotMsg = msg;
+  };
+  var onEnd = function onEnd(msg) {
     loadWantedEmail(function(err, wantedEmail) {
       if (err) {
         next(err);
         return;
       }
-      expect(msg.payload.type).to.eql('COMPRESSABLE');
-      expect(msg.payload.body.length).to.eql(314159);
-      expect(msg.oauth_scope).to.not.be.empty;
-      expect(args.oauth_scope).to.have.string(msg.oauth_scope);
-      expect(msg.username).to.eql(wantedEmail);
-      log.info('Verified: oauth2AuthToken had scope %s', msg.oauth_scope);
+      expect(gotMsg.payload.type).to.eql('COMPRESSABLE');
+      expect(gotMsg.payload.body.length).to.eql(314159);
+      expect(gotMsg.oauth_scope).to.not.be.empty;
+      expect(args.oauth_scope).to.have.string(gotMsg.oauth_scope);
+      expect(gotMsg.username).to.eql(wantedEmail);
+      log.info('Verified: oauth2AuthToken had scope %s', gotMsg.oauth_scope);
+      next();
     });
   };
 
@@ -202,8 +225,8 @@ exports.oauth2AuthToken = function oauth2AuthToken(ctor, opts, args, next) {
     response_type: 'COMPRESSABLE'
   };
   client.unaryCall(req, function(response) {
-    response.on('end', next || _.noop);
-    response.on('data', verifyMessage);
+    response.on('end', onEnd);
+    response.on('data', saveMessage);
   });
 };
 
@@ -215,19 +238,24 @@ exports.oauth2AuthToken = function oauth2AuthToken(ctor, opts, args, next) {
  * RPC call, rather than option to the RPC client (Stub) constructor.
  */
 exports.perRpcCreds = function perRpcCreds(ctor, opts, args, next) {
-  var verifyMessage = function verifyMessage(msg) {
+  var gotMsg;
+  var saveMessage = function(msg) {
+    gotMsg = msg;
+  };
+  var onEnd = function onEnd(msg) {
     loadWantedEmail(function(err, wantedEmail) {
       if (err) {
         next(err);
         return;
       }
-      expect(msg.payload.type).to.eql('COMPRESSABLE');
-      expect(msg.payload.body.length).to.eql(314159);
-      expect(msg.oauth_scope).to.not.be.empty;
-      expect(args.oauth_scope).to.have.string(msg.oauth_scope);
-      expect(msg.username).to.eql(wantedEmail);
-      log.info('Verified: perRpcCreds had scope %s', msg.oauth_scope);
+      expect(gotMsg.payload.type).to.eql('COMPRESSABLE');
+      expect(gotMsg.payload.body.length).to.eql(314159);
+      expect(gotMsg.oauth_scope).to.not.be.empty;
+      expect(args.oauth_scope).to.have.string(gotMsg.oauth_scope);
+      expect(gotMsg.username).to.eql(wantedEmail);
+      log.info('Verified: perRpcCreds had scope %s', gotMsg.oauth_scope);
     });
+    next();
   };
 
   // Run the test.
@@ -242,26 +270,31 @@ exports.perRpcCreds = function perRpcCreds(ctor, opts, args, next) {
     response_type: 'COMPRESSABLE'
   };
   client.unaryCall(req, function(response) {
-    response.on('end', next || _.noop);
-    response.on('data', verifyMessage);
+    response.on('end', onEnd);
+    response.on('data', saveMessage);
   }, {
     updateHeaders: addAuthFromADC(args.oauth_scope)
   });
 };
 
 exports.serviceAccount = function serviceAccount(ctor, opts, args, next) {
-  var verifyMessage = function verifyMessage(msg) {
+  var gotMsg;
+  var saveMessage = function(msg) {
+    gotMsg = msg;
+  };
+  var onEnd = function onEnd(msg) {
     loadWantedEmail(function(err, wantedEmail) {
       if (err) {
         next(err);
         return;
       }
-      expect(msg.payload.type).to.eql('COMPRESSABLE');
-      expect(msg.payload.body.length).to.eql(314159);
-      expect(msg.oauth_scope).to.not.be.empty;
-      expect(args.oauth_scope).to.have.string(msg.oauth_scope);
-      expect(msg.username).to.eql(wantedEmail);
-      log.info('Verified: serviceAccountCreds had scope %s', msg.oauth_scope);
+      expect(gotMsg.payload.type).to.eql('COMPRESSABLE');
+      expect(gotMsg.payload.body.length).to.eql(314159);
+      expect(gotMsg.oauth_scope).to.not.be.empty;
+      expect(args.oauth_scope).to.have.string(gotMsg.oauth_scope);
+      expect(gotMsg.username).to.eql(wantedEmail);
+      log.info('Verified: serviceAccountCreds had scope %s', gotMsg.oauth_scope);
+      next();
     });
   };
 
@@ -278,16 +311,21 @@ exports.serviceAccount = function serviceAccount(ctor, opts, args, next) {
     response_type: 'COMPRESSABLE'
   };
   client.unaryCall(req, function(response) {
-    response.on('end', next || _.noop);
-    response.on('data', verifyMessage);
+    response.on('end', onEnd);
+    response.on('data', saveMessage);
   });
 };
 
 exports.clientStreaming = function clientStreaming(client, next) {
-  var verifyMessage = function verifyMessage(msg) {
-    expect(msg.aggregated_payload_size).to.eql(74922);
+  var gotMsg;
+  var saveMessage = function(msg) {
+    gotMsg = msg;
+  };
+  var onEnd = function onEnd(msg) {
+    expect(gotMsg.aggregated_payload_size).to.eql(74922);
     log.info('Verified: OK, clientStreaming sent 74922 bytes');
-  }
+    next();
+  };
 
   // Run the test.
   var done = next || _.noop;
@@ -298,8 +336,8 @@ exports.clientStreaming = function clientStreaming(client, next) {
   }
   src.push(null);
   client.streamingInputCall(src, function(response) {
-    response.on('end', next || _.noop);
-    response.on('data', verifyMessage);
+    response.on('end', onEnd);
+    response.on('data', saveMessage);
   });
 };
 
@@ -340,26 +378,80 @@ exports.cancelAfterFirst = function cancelAfterFirst(client, next) {
       });
     }
   }
+  var cancelled = false;
   var req;
   var verifyEachMessage = function verifyEachMessage(msg) {
-    log.info('pingPong: receiving index:', index);
+    log.info('cancelAfterFirst: receiving index:', index);
     expect(msg.payload.type).to.eql('COMPRESSABLE');
     expect(msg.payload.body.lengh, responseSizes[index]);
     index += 1;
     if (index == 1 && req) {
-      log.info('... cancelling');
+      log.info('... cancelling after', index, 'msg');
       req.cancel();
     }
+    nextPing();
   };
+  var onEnd = function onEnd() {
+    expect(cancelled).to.be.true;
+    log.info('Verified: cancelAfterFirst cancelled after', index, 'msg');
+    done();
+  };
+
   // Run the test.
   nextPing();  // start with a ping
-  req = client.fullDuplexCall(src, function(response) {
+  req = client.fullDuplexCall(src, function onResponse(response) {
     response.on('data', verifyEachMessage);
+    response.on('end', onEnd);
   });
-  req.on('cancel', function() {
-    log.info('Verified: cancelAfterFirst sent/received', index, 'msgs');
+  req.on('cancel', function onCancel() {
+    cancelled = true;
+  });
+};
+
+exports.timeoutOnSleeper = function timeoutOnSleeper(client, next) {
+  var done = next || _.noop;
+  var payloadSizes = [27182, 8, 1828, 45904];
+  var responseSizes = [31415, 9, 2653, 58979];
+  var src = new PassThrough({objectMode: true});
+  var index = 0;
+  var nextPing = function nextPing() {
+    if (index === 4) {
+      log.info('timeoutOnSleeper: ending after', index, 'pings');
+      src.end();
+    } else {
+      log.info('timeoutOnSleeper: writing index:', index);
+      src.write({
+        response_type: 'COMPRESSABLE',
+        response_parameters: [
+          {size: responseSizes[index]}
+        ],
+        payload: {body: zeroes(payloadSizes[index])}
+      });
+    }
+  }
+  var verifyEachMessage = function verifyEachMessage(msg) {
+    log.info('timeoutOnSleeper: receiving index:', index);
+    expect(msg.payload.type).to.eql('COMPRESSABLE');
+    expect(msg.payload.body.lengh, responseSizes[index]);
+    index += 1;
+    nextPing();
+  };
+  var verifyCancelled = function() {
+    expect(index).to.be.below(payloadSizes.length);
+    log.info('Verified: timeoutOnSleeper cancelled after', index, 'msg');
     done();
+  };
+
+  // Run the test.
+  nextPing();  // start with a ping
+  var req = client.fullDuplexCall(src, function onResponse(response) {
+    response.on('data', verifyEachMessage);
+  }, {
+    headers: {
+      'grpc-timeout': '1m'
+    }
   });
+  req.on('cancel', verifyCancelled);
 };
 
 exports.serverStreaming = function serverStreaming(client, next) {
@@ -478,7 +570,8 @@ exports.withoutAuthTests = {
   client_streaming: exports.clientStreaming,
   server_streaming: exports.serverStreaming,
   ping_pong: exports.pingPong,
-  empty_stream: exports.emptyStream
+  empty_stream: exports.emptyStream,
+  timeout_on_sleeping_server: exports.timeoutOnSleeper
 };
 var withoutAuthTests = exports.withoutAuthTests;
 
@@ -599,9 +692,9 @@ var main = function main() {
   } else {
     _.merge(opts, insecureOptions);
   }
-  // if (_.has(args, 'server_host_override')) {
-  //   process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
-  // }
+  if (_.has(args, 'server_host_override')) {
+    process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+  }
   var testpb = protobuf.loadProto(path.join(__dirname, 'test.proto'));
   var interopCtor = buildClient(testpb.grpc.testing.TestService.client);
 

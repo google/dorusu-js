@@ -73,7 +73,8 @@ describe('External Interop Nodejs/Go', function() {
         'empty_stream',
         'ping_pong',
         'cancel_after_first_response',
-        'client_streaming'
+        'client_streaming',
+        'timeout_on_sleeping_server'
       ];
       _.forEach(testCases, function(t) {
         it('should pass the ' + t + ' interop test', function(done) {

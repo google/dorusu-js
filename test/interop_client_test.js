@@ -54,7 +54,9 @@ describe('Interop Client', function() {
           'server_streaming',
           'ping_pong',
           'empty_stream',
-          'cancel_after_first_response'
+          'cancel_after_first_response',
+          'timeout_on_sleeping_server'
+
       ];
       _.forEach(testCases, function(t) {
         it('should pass the ' + t + ' interop test', function(done) {
