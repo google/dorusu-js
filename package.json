@@ -1,6 +1,6 @@
 {
   "name": "xxx-tbetbetbe-nurpc",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "An implementation of gRPC protocol in javascript",
   "main": "index.js",
   "devDependencies": {
