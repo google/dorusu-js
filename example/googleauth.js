@@ -75,7 +75,7 @@ exports.addAuthFromADC = function addAuthFromADC(opt_scopes) {
           done(err);
           return;
         }
-        _.merge(headers, authHdrs)
+        _.merge(headers, authHdrs);
         done(null, headers);
       });
     });
@@ -91,7 +91,7 @@ exports.addAuthFromADC = function addAuthFromADC(opt_scopes) {
  */
 exports.addAuthFromOobADC = function addAuthFromOobADC(opt_scopes) {
   var oob = exports.addAuthFromADC(opt_scopes);
-  var token
+  var token;
 
   /**
    * Update an headers array with authentication information.
@@ -110,7 +110,7 @@ exports.addAuthFromOobADC = function addAuthFromOobADC(opt_scopes) {
         }
         token = updatedHeaders.Authorization;
         done(null, updatedHeaders);
-      })
+      });
     } else {
       headers = _.merge({'authorization': token}, headers);
       done(null, headers);

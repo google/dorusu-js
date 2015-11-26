@@ -44,12 +44,12 @@ var fs = require('fs');
 var path = require('path');
 
 exports.serverOptions = {
-  key: fs.readFileSync(path.join(__dirname, 'certs/server1.key')),
-  cert: fs.readFileSync(path.join(__dirname, 'certs/server1.pem'))
+  key: fs.readFileSync(path.join(__dirname, 'certs/server1.key'), 'utf8'),
+  cert: fs.readFileSync(path.join(__dirname, 'certs/server1.pem'), 'utf8')
 };
 
 exports.clientOptions = {
-  ca: fs.readFileSync(path.join(__dirname, 'certs/ca.pem'))
+  ca: fs.readFileSync(path.join(__dirname, 'certs/ca.pem'), 'utf8')
 };
 
 exports.options = _.merge(exports.serverOptions, exports.clientOptions);

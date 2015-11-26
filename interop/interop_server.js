@@ -95,10 +95,10 @@ function zeroes(size) {
  * @param {Object} response the response stream
  */
 function emptyCall(request, response) {
-  request.on('data', function(msg) {
+  request.on('data', function() {
     response.end({});
   });
-};
+}
 
 /**
  * Implements the interop test service unary handler.
@@ -117,7 +117,7 @@ function unaryCall(request, response) {
     }
     response.end({payload: {type: type, body: body}});
   });
-};
+}
 
 /**
  * Implements the interop test service streaming input handler.
@@ -134,7 +134,7 @@ var streamingInputCall = function streamingInputCall(request, response) {
   });
   request.on('end', function() {
     response.end({aggregated_payload_size: totalSize});
-  })
+  });
 };
 
 /**
@@ -157,7 +157,7 @@ function streamingOutputCall(request, response) {
           body: zeroes(param.size),
           type: type
         }
-      })
+      });
     });
   });
   request.on('end', function() {
@@ -187,7 +187,7 @@ var buildApp = exports.buildApp = function buildApp() {
   a.register('/grpc.testing.TestService/HalfDuplexCall',
              nurpc.notFound);
   return a;
-}
+};
 
 
 /**
@@ -198,9 +198,9 @@ var parseArgs = function parseArgs() {
   var parser = new ArgumentParser({
     version: require('../package').version,
     addHelp:true,
-    description: 'NuRPC Node.js Interopability Test Server.\n'
-                 + 'Runs the Interoperability test server used to validate'
-                 + ' RPCs implementations'
+    description: 'NuRPC Node.js Interopability Test Server.\n' +
+                 'Runs the Interoperability test server used to validate' +
+                 ' RPCs implementations'
   });
   parser.addArgument(
     [ '-p', '--port' ],
@@ -215,8 +215,8 @@ var parseArgs = function parseArgs() {
     {
       defaultValue: false,
       action: 'storeTrue',
-      help: 'When set, indicates that the server should be accessed'
-            + ' securely using the example test credentials'
+      help: 'When set, indicates that the server should be accessed' +
+            ' securely using the example test credentials'
     }
   );
   return parser.parseArgs();
@@ -226,7 +226,6 @@ var parseArgs = function parseArgs() {
  * Provides a command line entry point when this file is run as a script.
  */
 var main = function main() {
-  process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
   var log = bunyan.createLogger({
     name: 'interop_server',
     stream: process.stdout,
