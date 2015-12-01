@@ -1,10 +1,41 @@
+/*
+ *
+ * Copyright 2015, Google Inc.
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ *
+ *     * Redistributions of source code must retain the above copyright
+ * notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above
+ * copyright notice, this list of conditions and the following disclaimer
+ * in the documentation and/or other materials provided with the
+ * distribution.
+ *     * Neither the name of Google Inc. nor the names of its
+ * contributors may be used to endorse or promote products derived from
+ * this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ */
 'use strict';
 
 var _ = require('lodash');
 var app = require('../lib/app');
 var clientLog = require('./util').clientLog;
 var expect = require('chai').expect;
-var http2 = require('http2');
 var irreverser = require('./util').irreverser;
 var insecureOptions = require('./util').insecureOptions;
 var listenOnFreePort = require('./util').listenOnFreePort;
@@ -20,12 +51,12 @@ var Stub = require('../lib/client').Stub;
 // testTable is used to verify nurpc.makeDispatcher.
 var testTable = {
   '/x': function xHandler(request, response) {
-    request.once('data', function(data) {
+    request.once('data', function() {
       response.end('response from /x');
     });
   },
   '/y': function yHandler(request, response) {
-    request.once('data', function(data) {
+    request.once('data', function() {
       response.end('response from /y');
     });
   }
@@ -78,7 +109,7 @@ describe('RpcServer', function() {
   };
   var timeoutOpts = {
     'grpc-timeout': '10S'
-  }
+  };
   var testStatusMsg = 'a test status message';
   var testCode = 10101;
   var path = '/x';
@@ -89,7 +120,7 @@ describe('RpcServer', function() {
     insecure: insecureOptions
   };
   _.forEach(testOptions, function(serverOptions, connType) {
-    describe(connType + ': `server with an app', function() {
+    describe(connType + ': server with an app', function() {
       it('should use the fallback on unknown routes', function(done) {
         var thisClient = function(srv, stub) {
           stub.post(path, msg, function(response) {
@@ -123,7 +154,7 @@ describe('RpcServer', function() {
           // use a different status code than unknown
           response.rpcCode = nurpc.rpcCode('UNKNOWN');
           response.end('');
-        }
+        };
         // here, null === no requestListener fallback
         checkClientAndServer(thisClient, fallback, appOptions);
       });
@@ -178,7 +209,7 @@ describe('RpcServer', function() {
                 'message': '',
                 'code': nurpc.rpcCode('OK')
               });
-              expect(theError).to.be.undefined;
+              expect(theError).to.equal(undefined);
               srv.close();
               done();
             });
@@ -305,7 +336,7 @@ describe('RpcServer', function() {
                 'message': '',
                 'code': nurpc.rpcCode('OK')
               });
-              expect(theError).to.be.undefined;
+              expect(theError).to.equal(undefined);
               srv.close();
               done();
             });
@@ -315,7 +346,7 @@ describe('RpcServer', function() {
         var dispatcher = nurpc.makeDispatcher(testTable);
         checkClientAndServer(thisClient, dispatcher, serverOptions);
       });
-    })
+    });
     describe(connType + ': `nurpc.unavailable`', function() {
       it('should respond with rpcCode 404', function(done) {
         var thisClient = function(srv, stub) {
@@ -346,7 +377,7 @@ describe('RpcServer', function() {
 
         checkClientAndServer(thisClient, nurpc.unavailable, serverOptions);
       });
-    })
+    });
     describe(connType + ': simple request/response', function() {
       it('should work as expected', function(done) {
         var thisClient = function(srv, stub) {
@@ -367,7 +398,7 @@ describe('RpcServer', function() {
                 'message': '',
                 'code': nurpc.rpcCode('OK')
               });
-              expect(theError).to.be.undefined;
+              expect(theError).to.equal(undefined);
               srv.close();
               done();
             });
@@ -437,7 +468,7 @@ describe('RpcServer', function() {
             });
             response.on('metadata', function(md) {
               got = md;
-            })
+            });
             response.on('end', function() {
               expect(got).to.deep.equal(want);
               srv.close();
@@ -467,7 +498,7 @@ describe('RpcServer', function() {
             });
             response.on('metadata', function(md) {
               got = md;
-            })
+            });
             response.on('end', function() {
               expect(got).to.deep.equal(want);
               srv.close();
@@ -499,7 +530,7 @@ describe('RpcServer', function() {
             });
             response.on('metadata', function(md) {
               got = md;
-            })
+            });
             response.on('end', function() {
               expect(got).to.deep.equal(want);
               srv.close();
@@ -531,7 +562,7 @@ describe('RpcServer', function() {
             });
             response.on('metadata', function(md) {
               got = md;
-            })
+            });
             response.on('end', function() {
               expect(got).to.deep.equal(want);
               srv.close();
@@ -579,7 +610,7 @@ describe('RpcServer', function() {
         var thisClient = function(srv, stub) {
           stub.post(path, msg, function(response) {
             response.on('data', _.noop);
-            response.on('end', function() { srv.close() });
+            response.on('end', function() { srv.close(); });
           }, {headers: nonBinMd});
         };
         // thisTest checks that the server receives non-binary metadata
@@ -588,7 +619,7 @@ describe('RpcServer', function() {
           request.on('metadata', function(md) {
             expect(md).to.deep.equal(nonBinMd);
           });
-          request.once('data', function(data) {
+          request.once('data', function() {
             response.end(reply);
             done();
           });
@@ -599,7 +630,7 @@ describe('RpcServer', function() {
         var thisClient = function(srv, stub) {
           stub.post(path, msg, function(response) {
             response.on('data', _.noop);
-            response.on('end', function() { srv.close() });
+            response.on('end', function() { srv.close(); });
           }, {headers: binMd});
         };
         // thisTest checks that the server receives non-binary metadata
@@ -608,7 +639,7 @@ describe('RpcServer', function() {
           request.on('metadata', function(md) {
             expect(md).to.deep.equal(binMdEx);
           });
-          request.once('data', function(data) {
+          request.once('data', function() {
             response.end(reply);
             done();
           });
@@ -616,7 +647,7 @@ describe('RpcServer', function() {
         checkClientAndServer(thisClient, thisTest, serverOptions);
       });
     });
-  })
+  });
 });
 
 function makeRpcServer(opts, serverExpects) {
@@ -627,7 +658,7 @@ function makeRpcServer(opts, serverExpects) {
   } else {
     return server.createServer(opts, serverExpects);
   }
-};
+}
 
 function checkClientAndServer(clientExpects, serverExpects, opts) {
   var srv = makeRpcServer(opts, serverExpects);

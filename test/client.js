@@ -1,12 +1,46 @@
+/*
+ *
+ * Copyright 2015, Google Inc.
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ *
+ *     * Redistributions of source code must retain the above copyright
+ * notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above
+ * copyright notice, this list of conditions and the following disclaimer
+ * in the documentation and/or other materials provided with the
+ * distribution.
+ *     * Neither the name of Google Inc. nor the names of its
+ * contributors may be used to endorse or promote products derived from
+ * this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ */
 'use strict';
 
 var _ = require('lodash');
 var app = require('../lib/app');
 var buildClient = require('../lib/client').buildClient;
+var chai = require('chai');
+chai.use(require('dirty-chai'));
 var clientLog = require('./util').clientLog;
 var decodeMessage = require('../lib/codec').decodeMessage;
 var encodeMessage = require('../lib/codec').encodeMessage;
-var expect = require('chai').expect;
+var expect = chai.expect;
 var http2 = require('http2');
 var insecureOptions = require('./util').insecureOptions;
 var irreverser = require('./util').irreverser;
@@ -38,7 +72,6 @@ var testOptions = {
 
 describe('Service Client', function() {
   var msg = 'hello';
-  var reply = 'world';
   var testService = app.Service('test', [
     app.Method('do_echo', reverser, irreverser),
     app.Method('do_reverse', reverser),
@@ -47,9 +80,9 @@ describe('Service Client', function() {
   _.forEach(testOptions, function(serverOpts, connType) {
     describe(connType + ': function `buildClient(service)`', function() {
       it('should build a constructor that adds the expected methods', function() {
-        var testClient = buildClient(testService);
-        expect(testClient).to.be.a('function');
-        var instance = new testClient('http://localhost:8080/dummy/path');
+        var Ctor = buildClient(testService);
+        expect(Ctor).to.be.a('function');
+        var instance = new Ctor('http://localhost:8080/dummy/path');
         expect(instance.doEcho).to.be.a('function');
         expect(instance.doReverse).to.be.a('function');
         expect(instance.doIrreverse).to.be.a('function');
@@ -59,7 +92,7 @@ describe('Service Client', function() {
         // server received two messages.
         var count = 0;
         var thisTest = function(srv, stub) {
-          var msgs = Readable();
+          var msgs = new Readable();
           msgs.push(msg);
           msgs.push(msg);
           msgs.push(null);
@@ -80,7 +113,7 @@ describe('Service Client', function() {
                 'message': '',
                 'code': nurpc.rpcCode('OK')
               });
-              expect(theError).to.be.undefined;
+              expect(theError).to.be.undefined();
               expect(count).to.eql(2);
               srv.close();
               done();
@@ -92,7 +125,7 @@ describe('Service Client', function() {
           expect(request.url).to.equal('/test/do_echo');
           var validateReqThenRespond = function(err, decoded){
             expect(decoded.toString()).to.equal(wantedMsg);
-            if (count == 2) {
+            if (count === 2) {
               encodeMessage(decoded, null,
                             makeSendEncodedResponse(response));
             }
@@ -116,7 +149,7 @@ describe('Base RPC Client', function() {
   var reply = 'world';
   _.forEach(testOptions, function(serverOpts, connType) {
     var createServer = http2.createServer;
-    if (connType == 'insecure') {
+    if (connType === 'insecure') {
       createServer = http2.raw.createServer;
     }
     var payloadTests = [{
@@ -144,7 +177,7 @@ describe('Base RPC Client', function() {
           var count = 0;
           var thisTest = function(srv, stub) {
             var call = stub.rpcFunc(opts.marshal, opts.unmarshal);
-            var msgs = Readable();
+            var msgs = new Readable();
             msgs.push(msg);
             msgs.push(msg);
             msgs.push(null);
@@ -165,7 +198,7 @@ describe('Base RPC Client', function() {
                   'message': '',
                   'code': nurpc.rpcCode('OK')
                 });
-                expect(theError).to.be.undefined;
+                expect(theError).to.be.undefined();
                 expect(count).to.eql(2);
                 srv.close();
                 done();
@@ -176,7 +209,7 @@ describe('Base RPC Client', function() {
             expect(request.url).to.equal(path);
             var validateReqThenRespond = function(err, decoded){
               expect(decoded.toString()).to.equal(wantedReq);
-              if (count == 2) {
+              if (count === 2) {
                 encodeMessage(wantedReply, null,
                               makeSendEncodedResponse(response));
               }
@@ -220,7 +253,7 @@ describe('Base RPC Client', function() {
                   'message': '',
                   'code': nurpc.rpcCode('OK')
                 });
-                expect(theError).to.be.undefined;
+                expect(theError).to.be.undefined();
                 srv.close();
                 done();
               });
@@ -246,8 +279,8 @@ describe('Base RPC Client', function() {
         var serviceNameHeader = 'service_name';
         var headerName = 'name';
         var headerValue = 'value';
-        var server = createServer(serverOpts, function(request, response) {
-          var wantServiceName = 'https://localhost/testservice'
+        var server = createServer(serverOpts, function(request) {
+          var wantServiceName = 'https://localhost/testservice';
           expect(request.headers[headerName]).to.equal(headerValue);
           expect(request.headers[serviceNameHeader]).to.equal(wantServiceName);
           server.close();
@@ -275,7 +308,7 @@ describe('Base RPC Client', function() {
         it('should send headers when provided', function(done) {
           var headerName = 'name';
           var headerValue = 'value';
-          var server = createServer(serverOpts, function(request, response) {
+          var server = createServer(serverOpts, function(request) {
             expect(request.headers[headerName]).to.equal(headerValue);
             server.close();
             done();
@@ -292,10 +325,10 @@ describe('Base RPC Client', function() {
         it('should base64+rename if value is a Buffer', function(done) {
           var headerName = 'name';
           var headerValue = new Buffer('value');
-          var server = createServer(serverOpts, function(request, response) {
+          var server = createServer(serverOpts, function(request) {
             var want = headerValue.toString('base64');
             expect(request.headers[headerName + '-bin']).to.equal(want);
-            expect(request.headers[headerName]).to.be.undefined;
+            expect(request.headers[headerName]).to.be.undefined();
             server.close();
             done();
           });
@@ -311,10 +344,10 @@ describe('Base RPC Client', function() {
         it('should base64+rename if value is non-ascii', function(done) {
           var headerName = 'name';
           var headerValue = '\u00bd + \u00bc = \u00be';
-          var server = createServer(serverOpts, function(request, response) {
+          var server = createServer(serverOpts, function(request) {
             var want = new Buffer(headerValue).toString('base64');
             expect(request.headers[headerName + '-bin']).to.equal(want);
-            expect(request.headers[headerName]).to.be.undefined;
+            expect(request.headers[headerName]).to.be.undefined();
             server.close();
             done();
           });
@@ -332,7 +365,7 @@ describe('Base RPC Client', function() {
         it('should send headers when provided', function(done) {
           var headerName = 'name';
           var headerValue = ['value1', 'value2'];
-          var server = createServer(serverOpts, function(request, response) {
+          var server = createServer(serverOpts, function(request) {
             expect(request.headers[headerName]).to.deep.equal(headerValue);
             server.close();
             done();
@@ -349,13 +382,13 @@ describe('Base RPC Client', function() {
         it('should base64+rename if any item is a Buffer', function(done) {
           var headerName = 'name';
           var headerValue = [new Buffer('value'), 'this is ascii'];
-          var server = createServer(serverOpts, function(request, response) {
+          var server = createServer(serverOpts, function(request) {
             var want = [
               headerValue[0].toString('base64'),
               new Buffer(headerValue[1]).toString('base64')
             ];
             expect(request.headers[headerName + '-bin']).to.deep.equal(want);
-            expect(request.headers[headerName]).to.be.undefined;
+            expect(request.headers[headerName]).to.be.undefined();
             server.close();
             done();
           });
@@ -372,13 +405,13 @@ describe('Base RPC Client', function() {
         it('should base64+rename if any item that is non-ascii', function(done) {
           var headerName = 'name';
           var headerValue = ['\u00bd + \u00bc = \u00be', 'this is ascii'];
-          var server = createServer(serverOpts, function(request, response) {
+          var server = createServer(serverOpts, function(request) {
             var want = [
               new Buffer(headerValue[0]).toString('base64'),
               new Buffer(headerValue[1]).toString('base64')
             ];
             expect(request.headers[headerName + '-bin']).to.deep.equal(want);
-            expect(request.headers[headerName]).to.be.undefined;
+            expect(request.headers[headerName]).to.be.undefined();
             server.close();
             done();
           });
@@ -418,7 +451,7 @@ describe('Base RPC Client', function() {
         it('should succeed in sending a good grpc-timeout value', function(done) {
           var headerName = 'grpc-timeout';
           var headerValue = '10S';
-          var server = createServer(serverOpts, function(request, response) {
+          var server = createServer(serverOpts, function(request) {
             expect(request.headers[headerName]).to.equal(headerValue);
             server.close();
             done();
@@ -438,13 +471,13 @@ describe('Base RPC Client', function() {
           var testDeadline = new Date();
           var nowPlus10 = Date.now() + Math.pow(10, 4);
           testDeadline.setTime(nowPlus10);
-          headers['deadline'] = testDeadline;
+          headers.deadline = testDeadline;
           var thisTest = function(srv, stub) {
             stub.post(path, msg, _.noop, {headers: headers});
           };
 
-          var server = createServer(serverOpts, function(request, response) {
-            expect(request.headers['grpc-timeout']).to.exist;
+          var server = createServer(serverOpts, function(request) {
+            expect(request.headers['grpc-timeout']).to.exist();
             server.close();
             done();
           });
@@ -456,19 +489,18 @@ describe('Base RPC Client', function() {
           var testDeadline = new Date();
           var nowPlusHalfSec = Date.now() + 500; // 500 ms
           testDeadline.setTime(nowPlusHalfSec);
-          headers['deadline'] = testDeadline;
+          headers.deadline = testDeadline;
           var wantedCode = nurpc.rpcCode('DEADLINE_EXCEEDED');
           var thisTest = function(srv, stub) {
             var req = stub.post(path, msg, _.noop, { headers: headers});
             req.on('cancel', function(code) {
-              expect(Date.now()).to.be.above(nowPlusHalfSec);
               expect(wantedCode).to.equal(code);
               done();
             });
           };
 
-          var thisServer = function(request, response) {
-            expect(request.headers['grpc-timeout']).to.exist;
+          var thisServer = function(request) {
+            expect(request.headers['grpc-timeout']).to.exist();
             // don't handle response, this should cause the client to cancel.
           };
           checkClientAndServer(thisTest, thisServer, serverOpts);
@@ -482,18 +514,18 @@ describe('Base RPC Client', function() {
           stub.post(path, msg, function(response) {
             var metadataFired = false;
             response.on('data', _.noop);
-            response.on('metadata', function(md) {
+            response.on('metadata', function() {
               metadataFired = true;
             });
             response.on('end', function() {
-              expect(metadataFired).to.be.false;
+              expect(metadataFired).to.be.false();
               srv.close();
               done();
             });
           });
         };
         var thisServer = function(request, response) {
-          var receiveThenReply = function(err, decoded){
+          var receiveThenReply = function() {
             encodeMessage(reply, null, makeSendEncodedResponse(response));
           };
           request.on('data', function(data) {
@@ -513,7 +545,7 @@ describe('Base RPC Client', function() {
         // thisTest checks that the metadata includes expected headers
         var thisTest = function(srv, stub) {
           stub.post(path, msg, function(response) {
-            var theMetadata = undefined;
+            var theMetadata;
             var want = {
               'my-header': 'my-header-value',
               'my-trailer': 'my-trailer-value'
@@ -530,7 +562,7 @@ describe('Base RPC Client', function() {
           });
         };
         var thisServer = function(request, response) {
-          var receiveThenReply = function(err, decoded){
+          var receiveThenReply = function() {
             encodeMessage(reply, null, makeSendEncodedResponse(response));
           };
           request.on('data', function(data) {
@@ -552,7 +584,7 @@ describe('Base RPC Client', function() {
         // array.
         var thisTest = function(srv, stub) {
           stub.post(path, msg, function(response) {
-            var theMetadata = undefined;
+            var theMetadata;
             response.on('data', _.noop);
             response.on('metadata', function(md) {
               theMetadata = md;
@@ -568,7 +600,7 @@ describe('Base RPC Client', function() {
           });
         };
         var thisServer = function(request, response) {
-          var receiveThenReply = function(err, decoded){
+          var receiveThenReply = function() {
             encodeMessage(reply, null, makeSendEncodedResponse(response));
           };
           request.on('data', function(data) {
@@ -589,7 +621,7 @@ describe('Base RPC Client', function() {
         // thisTest checks that binary metadata is decoded into a Buffer.
         var thisTest = function(srv, stub) {
           stub.post(path, msg, function(response) {
-            var theMetadata = undefined;
+            var theMetadata;
             response.on('data', _.noop);
             response.on('metadata', function(md) {
               theMetadata = md;
@@ -605,7 +637,7 @@ describe('Base RPC Client', function() {
           });
         };
         var thisServer = function(request, response) {
-          var receiveThenReply = function(err, decoded){
+          var receiveThenReply = function() {
             encodeMessage(reply, null, makeSendEncodedResponse(response));
           };
           request.on('data', function(data) {
@@ -627,7 +659,7 @@ describe('Base RPC Client', function() {
         // buffers.
         var thisTest = function(srv, stub) {
           stub.post(path, msg, function(response) {
-            var theMetadata = undefined;
+            var theMetadata;
             response.on('data', _.noop);
             response.on('metadata', function(md) {
               theMetadata = md;
@@ -643,7 +675,7 @@ describe('Base RPC Client', function() {
           });
         };
         var thisServer = function(request, response) {
-          var receiveThenReply = function(err, decoded){
+          var receiveThenReply = function() {
             encodeMessage(reply, null, makeSendEncodedResponse(response));
           };
           request.on('data', function(data) {
@@ -664,7 +696,7 @@ describe('Base RPC Client', function() {
       var badStatuses = [
         'not-a-number-is-bad',
         '',
-        new Object()
+        {}
       ];
       var inTrailers = [true, false];
       badStatuses.forEach(function(badStatus) {
@@ -685,7 +717,7 @@ describe('Base RPC Client', function() {
             };
 
             var thisServer = function(request, response) {
-              var receiveThenReply = function(err, decoded) {
+              var receiveThenReply = function() {
                 encodeMessage(reply, null, makeSendEncodedResponse(response));
               };
               request.on('data', function(data) {
@@ -729,7 +761,7 @@ describe('Base RPC Client', function() {
           });
         };
         var thisServer = function(request, response) {
-          var receiveThenReply = function(err, decoded){
+          var receiveThenReply = function() {
             encodeMessage(reply, null, makeSendEncodedResponse(response));
           };
           request.on('data', function(data) {
@@ -755,8 +787,8 @@ describe('Base RPC Client', function() {
           req.cancel();
         };
 
-        var thisServer = function(request, response) {
-          expect(request.headers['grpc-timeout']).to.not.exist;
+        var thisServer = function(request) {
+          expect(request.headers['grpc-timeout']).to.not.exist();
           // confirm that no timeout header was sent
           // don't handle response, this should cause the client to cancel.
         };
@@ -773,8 +805,8 @@ describe('Base RPC Client', function() {
           req.abort();
         };
 
-        var thisServer = function(request, response) {
-          expect(request.headers['grpc-timeout']).to.not.exist;
+        var thisServer = function(request) {
+          expect(request.headers['grpc-timeout']).to.not.exist();
           // confirm that no timeout header was sent
           // don't handle response, this should cause the client to cancel.
         };
@@ -802,7 +834,7 @@ function makeServer(opts, serverExpects) {
   } else {
     return http2.createServer(opts, serverExpects);
   }
-};
+}
 
 function checkClientAndServer(clientExpects, serverExpects, opts) {
   checkClient(makeServer(opts, serverExpects), clientExpects, opts);
@@ -814,13 +846,13 @@ function makeSendEncodedResponse(response) {
   };
 }
 
-function checkServiceClient(clientCls, server, clientExpects, opts) {
+function checkServiceClient(Ctor, server, clientExpects, opts) {
   listenOnFreePort(server, function(addr, server) {
     var stubOpts = {
       log: clientLog
     };
     _.merge(stubOpts, addr, opts);
-    clientExpects(server, new clientCls(stubOpts));
+    clientExpects(server, new Ctor(stubOpts));
   });
 }
 

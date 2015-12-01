@@ -1,12 +1,44 @@
+/*
+ *
+ * Copyright 2015, Google Inc.
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ *
+ *     * Redistributions of source code must retain the above copyright
+ * notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above
+ * copyright notice, this list of conditions and the following disclaimer
+ * in the documentation and/or other materials provided with the
+ * distribution.
+ *     * Neither the name of Google Inc. nor the names of its
+ * contributors may be used to endorse or promote products derived from
+ * this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ */
+'use strict';
+
+var _ = require('lodash');
 var path = require('path');
 var fs = require('fs');
 var http2  = require('http2');
 var net = require('net');
-var url = require('url');
 var spawn = require('child_process').spawn;
 
-function noop() {}
-exports.noop = noop;
 
 if (process.env.HTTP2_LOG) {
   var logOutput = process.stderr;
@@ -34,12 +66,12 @@ if (process.env.HTTP2_LOG) {
     return exports.log;
   };
   exports.log = exports.clientLog = exports.serverLog = {
-    fatal: noop,
-    error: noop,
-    warn : noop,
-    info : noop,
-    debug: noop,
-    trace: noop,
+    fatal: _.noop,
+    error: _.noop,
+    warn : _.noop,
+    info : _.noop,
+    debug: _.noop,
+    trace: _.noop,
 
     child: function() { return this; }
   };
@@ -64,13 +96,12 @@ exports.insecureOptions = {
   plain: true
 };
 
-exports.nextAvailablePort = nextAvailablePort;
 /**
  * Finds a free port that a server can bind to, return an address
  *
  * @param {function(addr)} done is called with the free address
  */
-function nextAvailablePort(done) {
+exports.nextAvailablePort = function nextAvailablePort(done) {
   var server = net.createServer();
   server.listen(function() {
     var addr = server.address();
@@ -78,7 +109,7 @@ function nextAvailablePort(done) {
       done(addr);
     });
   });
-}
+};
 
 /**
  * Runs `srv` on the next available free port, and executes a `clientTask` that
@@ -88,7 +119,7 @@ function nextAvailablePort(done) {
  * server is running and srv is the srv instance.
  *
  * @param {object} srv a server instance
- * @param {function} clientTask that
+ * @param {function} clientTask as described above
  */
 exports.listenOnFreePort = function listenOnFreePort(srv, clientTask) {
   var startServer = function startServer(addr) {
@@ -96,39 +127,11 @@ exports.listenOnFreePort = function listenOnFreePort(srv, clientTask) {
       clientTask(addr, srv);
     });
   };
-  nextAvailablePort(startServer);
-};
-
-// Concatenate an array of buffers into a new buffer
-exports.concat = function concat(buffers) {
-  var size = 0;
-  for (var i = 0; i < buffers.length; i++) {
-    size += buffers[i].length;
-  }
-
-  var concatenated = new Buffer(size);
-  for (var cursor = 0, j = 0; j < buffers.length; cursor += buffers[j].length, j++) {
-    buffers[j].copy(concatenated, cursor);
-  }
-
-  return concatenated;
+  exports.nextAvailablePort(startServer);
 };
 
 exports.random = function random(min, max) {
   return min + Math.floor(Math.random() * (max - min + 1));
-};
-
-// Concatenate an array of buffers and then cut them into random size buffers
-exports.shuffleBuffers = function shuffleBuffers(buffers) {
-  var concatenated = exports.concat(buffers), output = [], written = 0;
-
-  while (written < concatenated.length) {
-    var chunk_size = Math.min(concatenated.length - written, Math.ceil(Math.random()*20));
-    output.push(concatenated.slice(written, written + chunk_size));
-    written += chunk_size;
-  }
-
-  return output;
 };
 
 // reverser is used as a test serialization func

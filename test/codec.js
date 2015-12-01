@@ -1,14 +1,47 @@
+/*
+ *
+ * Copyright 2015, Google Inc.
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ *
+ *     * Redistributions of source code must retain the above copyright
+ * notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above
+ * copyright notice, this list of conditions and the following disclaimer
+ * in the documentation and/or other materials provided with the
+ * distribution.
+ *     * Neither the name of Google Inc. nor the names of its
+ * contributors may be used to endorse or promote products derived from
+ * this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ */
 'use strict';
 
+var chai = require('chai');
+chai.use(require('dirty-chai'));
 var decodeMessage = require('../lib/codec').decodeMessage;
 var encodeMessage = require('../lib/codec').encodeMessage;
-var expect = require('chai').expect;
+var expect = chai.expect;
 var intervalToMicros = require('../lib/codec').intervalToMicros;
 var irreverser = require('./util').irreverser;
 var isInterval = require('../lib/codec').isInterval;
 var microsToInterval = require('../lib/codec').microsToInterval;
 var reverser = require('./util').reverser;
-var util = require('util');
 
 var ConcatStream = require('concat-stream');
 var EncodingStream = require('../lib/codec').EncodingStream;
@@ -19,7 +52,6 @@ var Writable = require('stream').Writable;
 describe('codec', function() {
   describe('interval conversion', function() {
     var _1e6 = Math.pow(10, 6);
-    var _1e3 = Math.pow(10, 3);
     var intervalTests = [
       [3600 * (Math.pow(10, 8) - 1) * _1e6, '99999999H'],
       [7200 * _1e6, '2H'],
@@ -90,15 +122,15 @@ describe('codec', function() {
     describe('isInterval', function() {
       it('should be false for invalid intervals', function() {
         invalidIntervals.forEach(function(t) {
-          expect(isInterval(t)).to.be.false;
+          expect(isInterval(t)).to.be.false();
         });
       });
       it('should be true for valid intervals', function() {
         intervalTests.forEach(function(t) {
-          expect(isInterval(t[1])).to.be.true;
+          expect(isInterval(t[1])).to.be.true();
         });
         nanoSecondTests.forEach(function(t) {
-          expect(isInterval(t[1])).to.be.true;
+          expect(isInterval(t[1])).to.be.true();
         });
       });
     });
@@ -106,7 +138,7 @@ describe('codec', function() {
 
   describe('DecodingStream', function() {
     it('should decode from a valid encoded stream ok', function(done) {
-      var sink = Writable();
+      var sink = new Writable();
       var collected = [];
       sink._write = function _write(chunk, enc, next) {
         collected.push(chunk.toString());
@@ -117,20 +149,20 @@ describe('codec', function() {
         expect(collected).to.eql(wanted);
         done();
       });
-      var source = Readable();
+      var source = new Readable();
       var num = 3; // arbitrary
       for (var i = 0; i < num; i++) {
         var nextMsg = 'msg' + i;
         source.push(nextMsg);
         wanted.push(nextMsg);
       }
-      var enc = EncodingStream();
-      var dec = DecodingStream();
+      var enc = new EncodingStream();
+      var dec = new DecodingStream();
       source.pipe(enc).pipe(dec).pipe(sink);
       source.push(null);
     });
     it('should decode using the unmarshalr when present', function(done) {
-      var sink = Writable();
+      var sink = new Writable();
       var collected = [];
       sink._write = function _write(chunk, enc, next) {
         collected.push(chunk.toString());
@@ -141,15 +173,15 @@ describe('codec', function() {
         expect(collected).to.eql(wanted);
         done();
       });
-      var source = Readable();
+      var source = new Readable();
       var num = 3; // arbitrary
       for (var i = 0; i < num; i++) {
         var nextMsg = 'msg' + i;
         source.push(nextMsg);
         wanted.push(nextMsg);
       }
-      var enc = EncodingStream({marshal: reverser});
-      var dec = DecodingStream({unmarshal: irreverser});
+      var enc = new EncodingStream({marshal: reverser});
+      var dec = new DecodingStream({unmarshal: irreverser});
       source.pipe(enc).pipe(dec).pipe(sink);
       source.push(null);
     });
@@ -157,13 +189,13 @@ describe('codec', function() {
 
   describe('EncodingStream', function() {
     it('ignores empty pushes', function(done){
-      var enc = EncodingStream();
+      var enc = new EncodingStream();
       var num = 7; // arbitrary
-      var sink = ConcatStream({encoding: 'buffer'}, function(buf) {
+      var sink = new ConcatStream({encoding: 'buffer'}, function(buf) {
         expect(buf.length).to.equal(0);
         done();
       });
-      var source = Readable();
+      var source = new Readable();
       for (var i = 0; i < num; i++) {
         var buf = new Buffer(0);
         source.push(buf);
@@ -173,17 +205,17 @@ describe('codec', function() {
     });
 
     it('should write a series multiple distinct messages ok', function(done){
-      var enc = EncodingStream();
+      var enc = new EncodingStream();
       var num = 3; // arbitrary
       var partSize = Buffer.byteLength('msg0');
-      var sink = ConcatStream({encoding: 'buffer'}, function(buf) {
+      var sink = new ConcatStream({encoding: 'buffer'}, function(buf) {
         expect(buf).to.be.an.instanceof(Buffer);
         expect(buf.length).to.eql((partSize + 5) * num);
         var firstPart = buf.slice(5, 5 + partSize);
         expect(firstPart.toString()).to.eql('msg0');
         done();
       });
-      var source = Readable();
+      var source = new Readable();
       for (var i = 0; i < num; i++) {
         source.push('msg' + i);
       }
@@ -191,17 +223,17 @@ describe('codec', function() {
       source.push(null);
     });
     it('should use the marshalr when present', function(done){
-      var enc = EncodingStream({marshal: reverser});
+      var enc = new EncodingStream({marshal: reverser});
       var num = 6; // arbitrary
       var partSize = Buffer.byteLength('msg0');
-      var sink = ConcatStream({encoding: 'buffer'}, function(buf) {
+      var sink = new ConcatStream({encoding: 'buffer'}, function(buf) {
         expect(buf).to.be.an.instanceof(Buffer);
         expect(buf.length).to.eql((partSize + 5) * num);
         var firstPart = buf.slice(5, 5 + partSize);
         expect(firstPart.toString()).to.eql('0gsm');
         done();
       });
-      var source = Readable();
+      var source = new Readable();
       for (var i = 0; i < num; i++) {
         source.push('msg' + i);
       }
@@ -238,7 +270,7 @@ describe('codec', function() {
       prefix.writeUIntBE(Buffer.byteLength(msg), 1, 4);
       var encoded = Buffer.concat([prefix, suffix]);
       decodeMessage(encoded, null, function(err, buf) {
-        expect(err).to.be.null;
+        expect(err).to.be.null();
         expect(buf.toString()).to.eql(msg);
         done();
       });
@@ -251,7 +283,7 @@ describe('codec', function() {
       prefix.writeUIntBE(Buffer.byteLength(msg), 1, 4);
       var encoded = Buffer.concat([prefix, suffix]);
       decodeMessage(encoded, {unmarshal: irreverser}, function(err, s) {
-        expect(err).to.be.null;
+        expect(err).to.be.null();
         expect(s).to.eql('txet emos');
         done();
       });
