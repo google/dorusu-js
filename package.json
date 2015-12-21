@@ -1,6 +1,6 @@
 {
-  "name": "xxx-tbetbetbe-nurpc",
-  "version": "0.1.1",
+  "name": "nurpc",
+  "version": "0.2.0",
   "description": "An implementation of gRPC protocol in Javascript",
   "main": "lib/nurpc.js",
   "devDependencies": {
@@ -31,6 +31,7 @@
     "doc": "jsdoc -c jsdoc.json",
     "interop_test": "istanbul test _mocha -- --reporter spec -g 'External Interop'",
     "lint": "jshint lib test",
+    "prepare": "npm test && npm run lint && npm version patch",
     "test": "istanbul test _mocha -- --reporter spec -i -g 'External Interop' --slow 1000 --timeout 5000"
   },
   "author": "Timothy Emiola",
