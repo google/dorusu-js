@@ -143,7 +143,11 @@ function GoAgent(opts) {
    * invoking the test client or server.
    */
   Object.defineProperty(this, 'testEnv', {
-    get: function() { return _.merge({'GOPATH': this.testDir}, process.env) }
+    get: function() {
+      var env = Object.create(process.env);
+      env['GOPATH'] = this.testDir;
+      return env;
+    }
   });
 
   /**
