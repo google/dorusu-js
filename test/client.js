@@ -425,6 +425,28 @@ describe('Base RPC Client', function() {
           checkClient(server, thisTest, serverOpts);
         });
       });
+      describe('special: on secure header', function() {
+        var action = 'block';
+        if (connType === 'secure') {
+          action = 'allow';
+        }
+        it('should ' + action + ' the secure header', function(done) {
+          // thisTest sends a dummy secure header
+          var headers = {'authorization': 'dummyValue'};
+          var thisTest = function(srv, stub) {
+            try {
+              stub.post(path, msg, _.noop, {headers: headers});
+              expect(connType).to.equal('secure');
+              done();
+            } catch (err) {
+              expect(connType).to.equal('insecure');
+              srv.close();
+              done();
+            }
+          };
+          checkClientAndServer(thisTest, _.noop, serverOpts);
+        });
+      });
       describe('special: timeout headers', function() {
         it('should fail on sending a bad grpc-timeout value', function(done) {
           // thisTest sends a bad grpc-timeout header.

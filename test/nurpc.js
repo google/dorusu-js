@@ -49,6 +49,9 @@ describe('nurpc', function() {
       it('should be true for ' + h, function() {
         expect(nurpc.isReservedHeader(h)).to.be.true();
       });
+      it('should be true for ' + h.toUpperCase(), function() {
+        expect(nurpc.isReservedHeader(h.toUpperCase())).to.be.true();
+      });
     });
     var unreservedHeaders =  [
       'myapp-foo',
@@ -58,6 +61,26 @@ describe('nurpc', function() {
     unreservedHeaders.forEach(function(h) {
       it('should be false for ' + h, function() {
         expect(nurpc.isReservedHeader(h)).to.be.false();
+      });
+    });
+  });
+  describe('method `isKnownSecureHeader(headerName)`', function() {
+    nurpc.knownSecureHeaders.forEach(function(h) {
+      it('should be true for ' + h, function() {
+        expect(nurpc.isKnownSecureHeader(h)).to.be.true();
+      });
+      it('should be true for ' + h.toUpperCase(), function() {
+        expect(nurpc.isKnownSecureHeader(h.toUpperCase())).to.be.true();
+      });
+    });
+    var nonSecureHeaders =  [
+      'myapp-foo',
+      'myapp-bar',
+      'x-my-well-known-header'
+    ];
+    nonSecureHeaders.forEach(function(h) {
+      it('should be false for ' + h, function() {
+        expect(nurpc.isKnownSecureHeader(h)).to.be.false();
       });
     });
   });
@@ -89,6 +112,30 @@ describe('nurpc', function() {
     nurpc.rpcCodes.forEach(function(c) {
       it('should return a valid code for ' + c, function() {
         expect(nurpc.rpcCode(c)).to.be.at.least(0);
+      });
+    });
+  });
+
+  describe('method `blockSecureHeader`', function() {
+    nurpc.knownSecureHeaders.forEach(function(c) {
+      it('initally, should throw an exception for ' + c, function() {
+        expect(function() { nurpc.blockSecureHeader(c); }).to.throw(Error);
+      });
+      describe('with SECURE_HEADER_POLICY as WARN', function() {
+        it('should be false for ' + c, function() {
+          var initial = nurpc.SECURE_HEADER_POLICY;
+          nurpc.SECURE_HEADER_POLICY = 'WARN';
+          expect(nurpc.blockSecureHeader(c)).to.be.false();
+          nurpc.SECURE_HEADER_POLICY = initial;
+        });
+      });
+      describe('with SECURE_HEADER_POLICY as DROP', function() {
+        it('should be false for ' + c, function() {
+          var initial = nurpc.SECURE_HEADER_POLICY;
+          nurpc.SECURE_HEADER_POLICY = 'DROP';
+          expect(nurpc.blockSecureHeader(c)).to.be.true();
+          nurpc.SECURE_HEADER_POLICY = initial;
+        });
       });
     });
   });
