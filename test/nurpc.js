@@ -121,20 +121,20 @@ describe('nurpc', function() {
       it('initally, should throw an exception for ' + c, function() {
         expect(function() { nurpc.blockSecureHeader(c); }).to.throw(Error);
       });
-      describe('with SECURE_HEADER_POLICY as WARN', function() {
+      describe('with secureHeaderPolicy as WARN', function() {
         it('should be false for ' + c, function() {
-          var initial = nurpc.SECURE_HEADER_POLICY;
-          nurpc.SECURE_HEADER_POLICY = 'WARN';
+          nurpc.configure({
+            secureHeaderPolicy: nurpc.WARN_POLICY
+          });
           expect(nurpc.blockSecureHeader(c)).to.be.false();
-          nurpc.SECURE_HEADER_POLICY = initial;
         });
       });
-      describe('with SECURE_HEADER_POLICY as DROP', function() {
+      describe('with secureHeaderPolicy as DROP', function() {
         it('should be false for ' + c, function() {
-          var initial = nurpc.SECURE_HEADER_POLICY;
-          nurpc.SECURE_HEADER_POLICY = 'DROP';
+          nurpc.configure({
+            secureHeaderPolicy: nurpc.DROP_POLICY
+          });
           expect(nurpc.blockSecureHeader(c)).to.be.true();
-          nurpc.SECURE_HEADER_POLICY = initial;
         });
       });
     });
