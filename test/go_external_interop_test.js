@@ -55,6 +55,7 @@ var testClientOptions = {
   secure: require('../example/certs').clientOptions,
   insecure: insecureOptions
 };
+testClientOptions.secure.rejectUnauthorized = false;
 
 var TEST_PROTO_PATH = path.join(__dirname, '../interop/test.proto');
 
@@ -122,7 +123,7 @@ var testServerOptions = {
 describe('External Interop Go/Nodejs', function() {
   /* Adjust the test timeout/duration; Go is spawned in a child proc */
   this.slow(3500);
-  this.timeout(6000);
+  this.timeout(8000);
 
   var theAgent, server, serverAddr;
   _.forEach(testServerOptions, function(serverOpts, connType) {
