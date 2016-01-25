@@ -64,10 +64,8 @@ var bunyan = require('bunyan');
 var http2 = require('http2');
 var insecureOptions = require('../test/util').insecureOptions;
 var path = require('path');
-var protobuf = require('../lib/protobuf');
-var nurpc = require('../lib/nurpc');
+var nurpc = require('../lib');
 var secureOptions = require('../test/util').secureOptions;
-var server = require('../lib/server');
 
 var ArgumentParser = require('argparse').ArgumentParser;
 
@@ -185,7 +183,7 @@ var parseArgs = function parseArgs() {
  * @returns {app.RpcApp} providing the math service implementation
  */
 var buildApp = exports.buildApp = function buildApp() {
-  var mathpb = protobuf.loadProto(path.join(__dirname, 'math.proto'));
+  var mathpb = nurpc.pb.loadProto(path.join(__dirname, 'math.proto'));
   var a = new app.RpcApp(mathpb.math.Math.server);
   a.register('/math.Math/DivMany', mathDiv);
   a.register('/math.Math/Div', mathDiv);
@@ -213,9 +211,9 @@ var main = function main() {
   var s;
   if (args.use_tls) {
     _.merge(opts, secureOptions);
-    s = server.createServer(opts);
+    s = nurpc.createServer(opts);
   } else {
-    s = server.raw.createServer(opts);
+    s = nurpc.raw.createServer(opts);
     _.merge(opts, insecureOptions);
   }
   s.listen(args.port);

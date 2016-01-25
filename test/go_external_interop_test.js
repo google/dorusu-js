@@ -34,7 +34,6 @@
 
 var _ = require('lodash');
 var buildApp = require('../interop/interop_server').buildApp;
-var buildClient = require('../lib/client').buildClient;
 var clientLog = require('./util').clientLog;
 var serverLog = require('./util').serverLog;
 var http2 = require('http2');
@@ -42,10 +41,8 @@ var insecureOptions = require('./util').insecureOptions;
 var interopClient = require('../interop/interop_client');
 var listenOnFreePort = require('./util').listenOnFreePort;
 var nextAvailablePort = require('./util').nextAvailablePort;
-var nurpc = require('../lib/nurpc');
+var nurpc = require('../lib');
 var path = require('path');
-var protobuf = require('../lib/protobuf');
-var server = require('../lib/server');
 
 var GoAgent = require('../interop/go_interop_agent').GoAgent;
 
@@ -64,8 +61,8 @@ describe('External Interop Nodejs/Go', function() {
   this.slow(5000);
   this.timeout(8000);
 
-  var testpb = protobuf.loadProto(TEST_PROTO_PATH);
-  var Ctor = buildClient(testpb.grpc.testing.TestService.client);
+  var testpb = nurpc.pb.loadProto(TEST_PROTO_PATH);
+  var Ctor = nurpc.buildClient(testpb.grpc.testing.TestService.client);
   var theClient, agent;
   _.forEach(testClientOptions, function(serverOpts, connType) {
     describe(connType, function() {
@@ -166,9 +163,9 @@ function makeNodeServer(opts) {
   opts = _.clone(opts);
   opts.log = serverLog;
   if (opts.plain) {
-    return server.raw.createServer(opts, nurpc.unavailable);
+    return nurpc.raw.createServer(opts, nurpc.unavailable);
   } else {
-    return server.createServer(opts, nurpc.unavailable);
+    return nurpc.createServer(opts, nurpc.unavailable);
   }
 }
 

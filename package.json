@@ -1,8 +1,8 @@
 {
   "name": "nurpc",
-  "version": "0.2.0",
-  "description": "An implementation of gRPC protocol in Javascript",
-  "main": "lib/nurpc.js",
+  "version": "0.3.0",
+  "description": "An implementation of gRPC in Javascript",
+  "main": "lib/index.js",
   "devDependencies": {
     "istanbul": "~0.3",
     "jsdoc": "~3.3",
@@ -25,7 +25,7 @@
     "http2": "tbetbetbe/node-http2#rpc-impl-all-changes",
     "jshint": "~2.5",
     "lodash": "~3.9",
-    "protobufjs": "~4.1"
+    "protobufjs": "~5.0"
   },
   "scripts": {
     "doc": "jsdoc -c jsdoc.json",

@@ -40,7 +40,7 @@ var irreverser = require('./util').irreverser;
 var insecureOptions = require('./util').insecureOptions;
 var listenOnFreePort = require('./util').listenOnFreePort;
 var reverser = require('./util').reverser;
-var nurpc = require('../lib/nurpc');
+var nurpc = require('../lib');
 var secureOptions = require('../example/certs').serverOptions;
 var server = require('../lib/server');
 var serverLog = require('./util').serverLog;
@@ -654,9 +654,9 @@ function makeRpcServer(opts, serverExpects) {
   opts = _.clone(opts);
   opts.log = serverLog;
   if (opts.plain) {
-    return server.raw.createServer(opts, serverExpects);
+    return nurpc.raw.createServer(opts, serverExpects);
   } else {
-    return server.createServer(opts, serverExpects);
+    return nurpc.createServer(opts, serverExpects);
   }
 }
 

@@ -62,13 +62,11 @@
 var _ = require('lodash');
 var async = require('async');
 var bunyan = require('bunyan');
-var buildClient = require('../lib/client').buildClient;
 var expect = require('chai').expect;
 var http2 = require('http2');
 var insecureOptions = require('../test/util').insecureOptions;
 var path = require('path');
-var protobuf = require('../lib/protobuf');
-var nurpc = require('../lib/nurpc');
+var nurpc = require('../lib');
 var secureOptions = require('../test/util').secureClientOptions;
 
 var ArgumentParser = require('argparse').ArgumentParser;
@@ -242,8 +240,8 @@ var main = function main() {
   } else {
     _.merge(opts, insecureOptions);
   }
-  var mathpb = protobuf.loadProto(path.join(__dirname, 'math.proto'));
-  var Ctor = buildClient(mathpb.math.Math.client);
+  var mathpb = nurpc.pb.loadProto(path.join(__dirname, 'math.proto'));
+  var Ctor = nurpc.buildClient(mathpb.math.Math.client);
   var client = new Ctor(opts);
   async.series([
     doOkDiv.bind(null, client),

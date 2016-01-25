@@ -34,23 +34,20 @@
 
 var _ = require('lodash');
 var buildApp = require('../example/math_server').buildApp;
-var buildClient = require('../lib/client').buildClient;
 var clientLog = require('./util').clientLog;
 var serverLog = require('./util').serverLog;
 var http2 = require('http2');
 var insecureOptions = require('./util').insecureOptions;
 var listenOnFreePort = require('./util').listenOnFreePort;
 var mathClient = require('../example/math_client');
-var nurpc = require('../lib/nurpc');
+var nurpc = require('../lib');
 var path = require('path');
-var protobuf = require('../lib/protobuf');
 var secureOptions = require('../example/certs').options;
-var server = require('../lib/server');
 
 http2.globalAgent = new http2.Agent({ log: clientLog });
 
-var mathpb = protobuf.loadProto(path.join(__dirname, '../example/math.proto'));
-var mathClientCls = buildClient(mathpb.math.Math.client);
+var mathpb = nurpc.pb.loadProto(path.join(__dirname, '../example/math.proto'));
+var mathClientCls = nurpc.buildClient(mathpb.math.Math.client);
 var testOptions = {
   secure: secureOptions,
   insecure: insecureOptions
@@ -97,8 +94,8 @@ function makeServer(opts) {
   opts = _.clone(opts);
   opts.log = serverLog;
   if (opts.plain) {
-    return server.raw.createServer(opts, nurpc.unavailable);
+    return nurpc.raw.createServer(opts, nurpc.unavailable);
   } else {
-    return server.createServer(opts, nurpc.unavailable);
+    return nurpc.createServer(opts, nurpc.unavailable);
   }
 }

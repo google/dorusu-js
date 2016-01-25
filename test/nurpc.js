@@ -35,7 +35,7 @@
 var chai = require('chai');
 chai.use(require('dirty-chai'));
 var expect = chai.expect;
-var nurpc = require('../lib/nurpc');
+var nurpc = require('../lib');
 
 describe('nurpc', function() {
   describe('method `isReservedHeader(headerName)`', function() {

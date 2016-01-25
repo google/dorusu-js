@@ -61,10 +61,7 @@
  */
 
 var _ = require('lodash');
-var addAuthFromADC = require('../example/googleauth').addAuthFromADC;
-var addAuthFromOobADC = require('../example/googleauth').addAuthFromOobADC;
 var async = require('async');
-var buildClient = require('../lib/client').buildClient;
 var bunyan = require('bunyan');
 var chai = require('chai');
 chai.use(require('dirty-chai'));
@@ -72,8 +69,7 @@ var expect = chai.expect;
 var http2 = require('http2');
 var insecureOptions = require('../test/util').insecureOptions;
 var path = require('path');
-var protobuf = require('../lib/protobuf');
-var nurpc = require('../lib/nurpc');
+var nurpc = require('../lib');
 var secureOptions = require('../example/certs').clientOptions;
 
 var ArgumentParser = require('argparse').ArgumentParser;
@@ -94,6 +90,42 @@ function zeroes(size) {
   b.fill(0);
   return b;
 }
+
+/**
+ * Get a function that obtains an auth token 'OOB' using Google's ADC,
+ * then re-uses that token all the time without falling back to ADC.
+ *
+ * @return {function(authUri, headers, done)} A function that updates the
+ *   headers passed and invokes done with the result
+ */
+var addAuthFromOobADC = function addAuthFromOobADC(opt_scopes) {
+  var oob = nurpc.addAuthFromADC(opt_scopes);
+  var token;
+
+  /**
+   * Update an headers array with authentication information.
+   *
+   * @param {string} opt_authURI The uri to authenticate to
+   * @param {Object} headers the current headers
+   * @param {function(Error, Object)} done the node completion callback called
+   *                                       with the updated headers
+   */
+  return function updateHeaders(opt_authURI, headers, done) {
+    if (!token) {
+      oob(opt_authURI, headers, function(err, updatedHeaders) {
+        if (err) {
+          done(err);
+          return;
+        }
+        token = updatedHeaders.Authorization;
+        done(null, updatedHeaders);
+      });
+    } else {
+      headers = _.merge({'authorization': token}, headers);
+      done(null, headers);
+    }
+  };
+};
 
 exports.emptyUnary = function emptyUnary(client, next) {
   var gotMsg;
@@ -179,7 +211,7 @@ exports.computeEngine = function computeEngine(Ctor, opts, args, next) {
     response_size: 314159,
     response_type: 'COMPRESSABLE'
   };
-  opts.updateHeaders = addAuthFromADC();  // no scope needed on GCE
+  opts.updateHeaders = nurpc.addAuthFromADC();  // no scope needed on GCE
   var client = new Ctor(opts);
   client.unaryCall(req, function(response) {
     response.on('end', onEnd);
@@ -207,7 +239,7 @@ exports.jwtTokenCreds = function jwtTokenCreds(Ctor, opts, args, next) {
   };
 
   // Run the test.
-  opts.updateHeaders = addAuthFromADC();  // no scopes for jwt token
+  opts.updateHeaders = nurpc.addAuthFromADC();  // no scopes for jwt token
   var client = new Ctor(opts);
   var req = {
     fill_oauth_scope: true,
@@ -306,7 +338,7 @@ exports.perRpcCreds = function perRpcCreds(Ctor, opts, args, next) {
     response.on('end', onEnd);
     response.on('data', saveMessage);
   }, {
-    updateHeaders: addAuthFromADC(args.oauth_scope)
+    updateHeaders: nurpc.addAuthFromADC(args.oauth_scope)
   });
 };
 
@@ -332,7 +364,7 @@ exports.serviceAccount = function serviceAccount(Ctor, opts, args, next) {
   };
 
   // Run the test.
-  opts.updateHeaders = addAuthFromADC(args.oauth_scope);
+  opts.updateHeaders = nurpc.addAuthFromADC(args.oauth_scope);
   var client = new Ctor(opts);
   var req = {
     fill_oauth_scope: true,
@@ -727,8 +759,8 @@ var main = function main() {
       rejectUnauthorized: false
     });
   }
-  var testpb = protobuf.loadProto(path.join(__dirname, 'test.proto'));
-  var Ctor = buildClient(testpb.grpc.testing.TestService.client);
+  var testpb = nurpc.pb.loadProto(path.join(__dirname, 'test.proto'));
+  var Ctor = nurpc.buildClient(testpb.grpc.testing.TestService.client);
 
   if (_.has(exports.withoutAuthTests, args.test_case)) {
     var client = new Ctor(opts);

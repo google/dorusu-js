@@ -66,11 +66,11 @@ var app = require('../lib/app');
 var bunyan = require('bunyan');
 var http2 = require('http2');
 var insecureOptions = require('../test/util').insecureOptions;
+var nurpc = require('../lib');
 var path = require('path');
-var protobuf = require('../lib/protobuf');
-var nurpc = require('../lib/nurpc');
+var protobuf = nurpc.pb;
+
 var secureOptions = require('../example/certs').serverOptions;
-var server = require('../lib/server');
 
 var ArgumentParser = require('argparse').ArgumentParser;
 
@@ -241,9 +241,9 @@ var main = function main() {
   var s;
   if (args.use_tls) {
     _.merge(opts, secureOptions);
-    s = server.createServer(opts);
+    s = nurpc.createServer(opts);
   } else {
-    s = server.raw.createServer(opts);
+    s = nurpc.raw.createServer(opts);
     _.merge(opts, insecureOptions);
   }
   s.listen(args.port);
