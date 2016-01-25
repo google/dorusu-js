@@ -66,13 +66,14 @@ var addAuthFromOobADC = require('../example/googleauth').addAuthFromOobADC;
 var async = require('async');
 var buildClient = require('../lib/client').buildClient;
 var bunyan = require('bunyan');
-var expect = require('chai').expect;
+var chai = require('chai');
+chai.use(require('dirty-chai'));
+var expect = chai.expect;
 var http2 = require('http2');
 var insecureOptions = require('../test/util').insecureOptions;
 var path = require('path');
 var protobuf = require('../lib/protobuf');
 var nurpc = require('../lib/nurpc');
-var server = require('../lib/server');
 var secureOptions = require('../example/certs').clientOptions;
 
 var ArgumentParser = require('argparse').ArgumentParser;
@@ -118,10 +119,10 @@ exports.largeUnary = function largeUnary(client, next) {
   var saveMessage = function(msg) {
     gotMsg = msg;
   };
-  var onEnd = function(msg) {
+  var onEnd = function() {
     expect(gotMsg.payload.type).to.eql('COMPRESSABLE');
     expect(gotMsg.payload.body.length).to.eql(314159);
-    log.info('Verified: largeUnary(...) => (', msg, ')');
+    log.info('Verified: largeUnary(...) => (', gotMsg, ')');
     next();
   };
 
@@ -140,27 +141,27 @@ exports.largeUnary = function largeUnary(client, next) {
 };
 
 var loadWantedEmail = function loadWantedEmail(next) {
-  var credsPath = process.env['GOOGLE_APPLICATION_CREDENTIALS'];
+  var credsPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
   if (!credsPath) {
     next(new Error('The ADC env variable required for this test is not set'));
     return;
   }
   try {
     var creds = require(credsPath);
+    next(null, creds.client_email);
   } catch (err) {
     next(err);
     return;
   }
-  next(null, creds['client_email']);
 };
 
-exports.computeEngine = function computeEngine(ctor, opts, args, next) {
+exports.computeEngine = function computeEngine(Ctor, opts, args, next) {
   var wantedEmail = args.default_service_email_address;
   var gotMsg;
   var saveMessage = function(msg) {
     gotMsg = msg;
   };
-  var onEnd = function onEnd(msg) {
+  var onEnd = function onEnd() {
     expect(gotMsg.payload.type).to.eql('COMPRESSABLE');
     expect(gotMsg.payload.body.length).to.eql(314159);
     expect(gotMsg.username).to.eql(wantedEmail);
@@ -179,19 +180,19 @@ exports.computeEngine = function computeEngine(ctor, opts, args, next) {
     response_type: 'COMPRESSABLE'
   };
   opts.updateHeaders = addAuthFromADC();  // no scope needed on GCE
-  var client = new ctor(opts);
+  var client = new Ctor(opts);
   client.unaryCall(req, function(response) {
     response.on('end', onEnd);
     response.on('data', saveMessage);
   });
 };
 
-exports.jwtTokenCreds = function jwtTokenCreds(ctor, opts, args, next) {
+exports.jwtTokenCreds = function jwtTokenCreds(Ctor, opts, args, next) {
   var gotMsg;
   var saveMessage = function(msg) {
     gotMsg = msg;
   };
-  var onEnd = function onEnd(msg) {
+  var onEnd = function onEnd() {
     loadWantedEmail(function(err, wantedEmail) {
       if (err) {
         next(err);
@@ -207,7 +208,7 @@ exports.jwtTokenCreds = function jwtTokenCreds(ctor, opts, args, next) {
 
   // Run the test.
   opts.updateHeaders = addAuthFromADC();  // no scopes for jwt token
-  var client = new ctor(opts);
+  var client = new Ctor(opts);
   var req = {
     fill_oauth_scope: true,
     fill_username: true,
@@ -223,12 +224,12 @@ exports.jwtTokenCreds = function jwtTokenCreds(ctor, opts, args, next) {
   });
 };
 
-exports.oauth2AuthToken = function oauth2AuthToken(ctor, opts, args, next) {
+exports.oauth2AuthToken = function oauth2AuthToken(Ctor, opts, args, next) {
   var gotMsg;
   var saveMessage = function(msg) {
     gotMsg = msg;
   };
-  var onEnd = function onEnd(msg) {
+  var onEnd = function onEnd() {
     loadWantedEmail(function(err, wantedEmail) {
       if (err) {
         next(err);
@@ -236,7 +237,7 @@ exports.oauth2AuthToken = function oauth2AuthToken(ctor, opts, args, next) {
       }
       expect(gotMsg.payload.type).to.eql('COMPRESSABLE');
       expect(gotMsg.payload.body.length).to.eql(314159);
-      expect(gotMsg.oauth_scope).to.not.be.empty;
+      expect(gotMsg.oauth_scope).to.not.be.empty();
       expect(args.oauth_scope).to.have.string(gotMsg.oauth_scope);
       expect(gotMsg.username).to.eql(wantedEmail);
       log.info('Verified: oauth2AuthToken had scope %s', gotMsg.oauth_scope);
@@ -246,7 +247,7 @@ exports.oauth2AuthToken = function oauth2AuthToken(ctor, opts, args, next) {
 
   // Run the test.
   opts.updateHeaders = addAuthFromOobADC(args.oauth_scope);
-  var client = new ctor(opts);
+  var client = new Ctor(opts);
   var req = {
     fill_oauth_scope: true,
     fill_username: true,
@@ -269,12 +270,12 @@ exports.oauth2AuthToken = function oauth2AuthToken(ctor, opts, args, next) {
  * is that the updateHeaders func is passed as an option on the
  * RPC call, rather than option to the RPC client (Stub) constructor.
  */
-exports.perRpcCreds = function perRpcCreds(ctor, opts, args, next) {
+exports.perRpcCreds = function perRpcCreds(Ctor, opts, args, next) {
   var gotMsg;
   var saveMessage = function(msg) {
     gotMsg = msg;
   };
-  var onEnd = function onEnd(msg) {
+  var onEnd = function onEnd() {
     loadWantedEmail(function(err, wantedEmail) {
       if (err) {
         next(err);
@@ -282,7 +283,7 @@ exports.perRpcCreds = function perRpcCreds(ctor, opts, args, next) {
       }
       expect(gotMsg.payload.type).to.eql('COMPRESSABLE');
       expect(gotMsg.payload.body.length).to.eql(314159);
-      expect(gotMsg.oauth_scope).to.not.be.empty;
+      expect(gotMsg.oauth_scope).to.not.be.empty();
       expect(args.oauth_scope).to.have.string(gotMsg.oauth_scope);
       expect(gotMsg.username).to.eql(wantedEmail);
       log.info('Verified: perRpcCreds had scope %s', gotMsg.oauth_scope);
@@ -291,7 +292,7 @@ exports.perRpcCreds = function perRpcCreds(ctor, opts, args, next) {
   };
 
   // Run the test.
-  var client = new ctor(opts);
+  var client = new Ctor(opts);
   var req = {
     fill_oauth_scope: true,
     fill_username: true,
@@ -309,12 +310,12 @@ exports.perRpcCreds = function perRpcCreds(ctor, opts, args, next) {
   });
 };
 
-exports.serviceAccount = function serviceAccount(ctor, opts, args, next) {
+exports.serviceAccount = function serviceAccount(Ctor, opts, args, next) {
   var gotMsg;
   var saveMessage = function(msg) {
     gotMsg = msg;
   };
-  var onEnd = function onEnd(msg) {
+  var onEnd = function onEnd() {
     loadWantedEmail(function(err, wantedEmail) {
       if (err) {
         next(err);
@@ -322,7 +323,7 @@ exports.serviceAccount = function serviceAccount(ctor, opts, args, next) {
       }
       expect(gotMsg.payload.type).to.eql('COMPRESSABLE');
       expect(gotMsg.payload.body.length).to.eql(314159);
-      expect(gotMsg.oauth_scope).to.not.be.empty;
+      expect(gotMsg.oauth_scope).to.not.be.empty();
       expect(args.oauth_scope).to.have.string(gotMsg.oauth_scope);
       expect(gotMsg.username).to.eql(wantedEmail);
       log.info('Verified: serviceAccountCreds had scope %s', gotMsg.oauth_scope);
@@ -332,7 +333,7 @@ exports.serviceAccount = function serviceAccount(ctor, opts, args, next) {
 
   // Run the test.
   opts.updateHeaders = addAuthFromADC(args.oauth_scope);
-  var client = new ctor(opts);
+  var client = new Ctor(opts);
   var req = {
     fill_oauth_scope: true,
     fill_username: true,
@@ -349,18 +350,18 @@ exports.serviceAccount = function serviceAccount(ctor, opts, args, next) {
 };
 
 exports.clientStreaming = function clientStreaming(client, next) {
+  var done = next || _.noop;
   var gotMsg;
   var saveMessage = function(msg) {
     gotMsg = msg;
   };
-  var onEnd = function onEnd(msg) {
+  var onEnd = function onEnd() {
     expect(gotMsg.aggregated_payload_size).to.eql(74922);
     log.info('Verified: OK, clientStreaming sent 74922 bytes');
-    next();
+    done();
   };
 
   // Run the test.
-  var done = next || _.noop;
   var payloadSizes = [27182, 8, 1828, 45904];
   var src = new Readable({objectMode: true});
   for (var i = 0; i < payloadSizes.length; i++) {
@@ -374,15 +375,15 @@ exports.clientStreaming = function clientStreaming(client, next) {
 };
 
 exports.cancelAfterBegin = function cancelAfterBegin(client, next) {
+  var done = next || _.noop;
   var verifyWasCancelled = function verifyWasCancelled(code) {
     var wantedCode = nurpc.rpcCode('CANCELLED');
     expect(code).to.equal(wantedCode);
     log.info('Verified: OK, cancelAfterBegin had cancelled OK');
-    next();
+    done();
   };
 
   // Run the test.
-  var done = next || _.noop;
   var src = new PassThrough({objectMode: true});
   var req = client.streamingInputCall(src, _.noop);
   req.on('cancel', verifyWasCancelled);
@@ -390,7 +391,6 @@ exports.cancelAfterBegin = function cancelAfterBegin(client, next) {
 };
 
 exports.cancelAfterFirst = function cancelAfterFirst(client, next) {
-  var done = next || _.noop;
   var payloadSizes = [27182, 8, 1828, 45904];
   var responseSizes = [31415, 9, 2653, 58979];
   var src = new PassThrough({objectMode: true});
@@ -409,7 +409,7 @@ exports.cancelAfterFirst = function cancelAfterFirst(client, next) {
         payload: {body: zeroes(payloadSizes[index])}
       });
     }
-  }
+  };
   var cancelled = false;
   var req;
   var verifyEachMessage = function verifyEachMessage(msg) {
@@ -417,14 +417,15 @@ exports.cancelAfterFirst = function cancelAfterFirst(client, next) {
     expect(msg.payload.type).to.eql('COMPRESSABLE');
     expect(msg.payload.body.lengh, responseSizes[index]);
     index += 1;
-    if (index == 1 && req) {
+    if (index === 1 && req) {
       log.info('... cancelling after', index, 'msg');
       req.cancel();
     }
     nextPing();
   };
+  var done = next || _.noop;
   var onEnd = function onEnd() {
-    expect(cancelled).to.be.true;
+    expect(cancelled).to.be.true();
     log.info('Verified: cancelAfterFirst cancelled after', index, 'msg');
     done();
   };
@@ -460,7 +461,7 @@ exports.timeoutOnSleeper = function timeoutOnSleeper(client, next) {
         payload: {body: zeroes(payloadSizes[index])}
       });
     }
-  }
+  };
   var verifyEachMessage = function verifyEachMessage(msg) {
     log.info('timeoutOnSleeper: receiving index:', index);
     expect(msg.payload.type).to.eql('COMPRESSABLE');
@@ -503,7 +504,7 @@ exports.serverStreaming = function serverStreaming(client, next) {
     expect(msg.payload.body.lengh,
            req.response_parameters[index].size);
     index += 1;
-  }
+  };
 
   // Run the test.
   client.streamingOutputCall(req, function(response) {
@@ -535,14 +536,14 @@ exports.pingPong = function pingPong(client, next) {
         payload: {body: zeroes(payloadSizes[index])}
       });
     }
-  }
+  };
   var verifyEachMessage = function verifyEachMessage(msg) {
     log.info('pingPong: receiving index:', index);
     expect(msg.payload.type).to.eql('COMPRESSABLE');
     expect(msg.payload.body.lengh, responseSizes[index]);
     index += 1;
     nextPing();
-  }
+  };
 
   // Run the test.
   nextPing();  // start with a ping
@@ -557,14 +558,14 @@ exports.pingPong = function pingPong(client, next) {
 
 exports.emptyStream = function emptyStream(client, next) {
   var done = next || _.noop;
-  var src = Readable({objectMode:true});
+  var src = new Readable({objectMode:true});
   src.push(null);  // Do not send any messages;
   client.fullDuplexCall(src, function(response) {
     response.on('end', function() {
       log.info('Verified: empty stream sent/received');
       done();
     });
-    response.on('data', function(msg) {
+    response.on('data', function() {
       expect(true).to.be(false); // should not be called
     });
   });
@@ -573,10 +574,10 @@ exports.emptyStream = function emptyStream(client, next) {
 exports.runInteropTest = function runInteropTest(client, testCase, next) {
   var done = next || _.noop;
   if (_.has(exports.withoutAuthTests, testCase)) {
-    withoutAuthTests[testCase](client, done);
+    exports.withoutAuthTests[testCase](client, done);
     return;
-  };
-  done(new Error('Unknown test case:' + testCase))
+  }
+  done(new Error('Unknown test case:' + testCase));
 };
 
 exports.allWithoutAuth = function allWithoutAuth(client, next) {
@@ -605,7 +606,6 @@ exports.withoutAuthTests = {
   empty_stream: exports.emptyStream,
   timeout_on_sleeping_server: exports.timeoutOnSleeper
 };
-var withoutAuthTests = exports.withoutAuthTests;
 
 /**
  * The auth interop tests that this file implements.
@@ -617,7 +617,6 @@ exports.withAuthTests = {
   per_rpc_creds: exports.perRpcCreds,
   service_account_creds: exports.serviceAccount
 };
-var withAuthTests = exports.withAuthTests;
 
 var defaultServerPort = 50051;
 var defaultHost = 'localhost';
@@ -630,10 +629,10 @@ var parseArgs = function parseArgs() {
   var parser = new ArgumentParser({
     version: require('../package').version,
     addHelp:true,
-    description: 'NuRPC Node.js Interoperability Client.\n'
-               + 'It accesses an RPC Interoperability Server and performs'
-               + ' test RPCs that demonstrate conformance with the rpc'
-               + ' protocol specification.'
+    description: 'NuRPC Node.js Interoperability Client.\n' +
+                 'It accesses an RPC Interoperability Server and performs' +
+                 ' test RPCs that demonstrate conformance with the rpc' +
+                 ' protocol specification.'
   });
   parser.addArgument(
     [ '-a', '--server_host' ],
@@ -655,8 +654,8 @@ var parseArgs = function parseArgs() {
     {
       defaultValue: false,
       action: 'storeTrue',
-      help: 'When set, indicates that the server should be accessed'
-                + ' securely using the example test credentials'
+      help: 'When set, indicates that the server should be accessed' +
+            ' securely using the example test credentials'
     }
   );
   parser.addArgument(
@@ -667,8 +666,8 @@ var parseArgs = function parseArgs() {
       help: 'When set, TLS connections use the test CA certificate'
     }
   );
-  var allTheTests = _.keys(withoutAuthTests);
-  allTheTests = _.union(allTheTests, _.keys(withAuthTests));
+  var allTheTests = _.keys(exports.withoutAuthTests);
+  allTheTests = _.union(allTheTests, _.keys(exports.withAuthTests));
   parser.addArgument(
     [ '-t', '--test_case' ],
     {
@@ -717,29 +716,29 @@ var main = function main() {
     log: log,
     port: args.server_port,
     host: args.server_host
-  }
+  };
   if (args.use_tls) {
     _.merge(opts, secureOptions);
   } else {
     _.merge(opts, insecureOptions);
   }
   if (_.has(args, 'server_host_override')) {
-    secure: _.merge(opts, {
+    _.merge(opts, {
       rejectUnauthorized: false
-    })
+    });
   }
   var testpb = protobuf.loadProto(path.join(__dirname, 'test.proto'));
-  var interopCtor = buildClient(testpb.grpc.testing.TestService.client);
+  var Ctor = buildClient(testpb.grpc.testing.TestService.client);
 
-  if (_.has(withoutAuthTests, args.test_case)) {
-    var client = new interopCtor(opts);
+  if (_.has(exports.withoutAuthTests, args.test_case)) {
+    var client = new Ctor(opts);
     async.series([
-      withoutAuthTests[args.test_case].bind(null, client),
+      exports.withoutAuthTests[args.test_case].bind(null, client),
       process.exit.bind(null, 0)  /* TODO enable client's to be closed */
     ]);
-  } else if (_.has(withAuthTests, args.test_case)) {
+  } else if (_.has(exports.withAuthTests, args.test_case)) {
     async.series([
-      withAuthTests[args.test_case].bind(null, interopCtor, opts, args),
+      exports.withAuthTests[args.test_case].bind(null, Ctor, opts, args),
       process.exit.bind(null, 0)  /* TODO enable client's to be closed */
     ]);
   }

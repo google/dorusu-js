@@ -100,7 +100,7 @@ function mathDiv(request, response) {
   request.on('error', function() {
     response.end();
   });
-};
+}
 
 /**
  * Implements math server summation.
@@ -152,9 +152,9 @@ var parseArgs = function parseArgs() {
   var parser = new ArgumentParser({
     version: require('../package').version,
     addHelp:true,
-    description: 'NuRPC Node.js Math Server example.\n'
-                 + 'Runs an example Math Server and handles sample'
-                 + ' RPCs.'
+    description: 'NuRPC Node.js Math Server example.\n' +
+                 'Runs an example Math Server and handles sample' +
+                 ' RPCs.'
   });
   parser.addArgument(
     [ '-p', '--port' ],
@@ -169,8 +169,8 @@ var parseArgs = function parseArgs() {
     {
       defaultValue: false,
       action: 'storeTrue',
-      help: 'When set, indicates that the server should be accessed'
-            + ' securely using the example test credentials'
+      help: 'When set, indicates that the server should be accessed' +
+            ' securely using the example test credentials'
     }
   );
   return parser.parseArgs();
@@ -192,7 +192,7 @@ var buildApp = exports.buildApp = function buildApp() {
   a.register('/math.Math/Fib', mathFib);
   a.register('/math.Math/Sum', mathSum);
   return a;
-}
+};
 
 /**
  * Provides a command line entry point when this file is run as a script.

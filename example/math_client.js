@@ -70,7 +70,6 @@ var path = require('path');
 var protobuf = require('../lib/protobuf');
 var nurpc = require('../lib/nurpc');
 var secureOptions = require('../test/util').secureClientOptions;
-var server = require('../lib/server');
 
 var ArgumentParser = require('argparse').ArgumentParser;
 var Readable = require('stream').Readable;
@@ -115,7 +114,7 @@ exports.doStreamDiv = function doStreamDiv(client, next) {
       got.push(msg);
       next_index += 1;
     });
-    response.on('status', function(status) {
+    response.on('status', function() {
       log.info('Verified: stream div:', reqs, 'gives', got);
       done();
     });
@@ -125,7 +124,7 @@ var doStreamDiv = exports.doStreamDiv;
 
 exports.doBadDiv = function doBadDiv(client, next) {
   var done = next || _.noop;
-  var req = {dividend:7, divisor:0}
+  var req = {dividend:7, divisor:0};
   client.div(req, function(response) {
     response.on('end', function() {
       done(null);
@@ -156,7 +155,7 @@ exports.doOkSum = function doOkSum(client, next) {
       expect(+msg.num).to.equal(want);
       log.info('Verified: sum of', pushed, 'is', msg);
     });
-    response.on('end', function(status) {
+    response.on('end', function() {
       done(null);
     });
   });
@@ -175,7 +174,7 @@ exports.doOkFib = function doOkFib(client, next) {
       got.push(msg);
       next_index += 1;
     });
-    response.on('status', function(status) {
+    response.on('status', function() {
       log.info('Verified: fib of', req, 'is', got);
       done();
     });
@@ -191,9 +190,9 @@ var parseArgs = function parseArgs() {
   var parser = new ArgumentParser({
     version: require('../package').version,
     addHelp:true,
-    description: 'NuRPC Node.js Math Client example.\n'
-                 + 'It accesses an example Math Server and performs sample'
-                 + ' RPCs.'
+    description: 'NuRPC Node.js Math Client example.\n' +
+                 'It accesses an example Math Server and performs sample' +
+                 ' RPCs.'
   });
   parser.addArgument(
     [ '-a', '--address' ],
@@ -215,8 +214,8 @@ var parseArgs = function parseArgs() {
     {
       defaultValue: false,
       action: 'storeTrue',
-      help: 'When set, indicates that the server should be accessed'
-            + ' securely using the example test credentials.'
+      help: 'When set, indicates that the server should be accessed' +
+            ' securely using the example test credentials.'
     }
   );
   return parser.parseArgs();
@@ -237,15 +236,15 @@ var main = function main() {
     log: log,
     port: args.port,
     host: args.address
-  }
+  };
   if (args.use_tls) {
     _.merge(opts, secureOptions);
   } else {
     _.merge(opts, insecureOptions);
   }
   var mathpb = protobuf.loadProto(path.join(__dirname, 'math.proto'));
-  var mathClientCls = buildClient(mathpb.math.Math.client);
-  var client = new mathClientCls(opts);
+  var Ctor = buildClient(mathpb.math.Math.client);
+  var client = new Ctor(opts);
   async.series([
     doOkDiv.bind(null, client),
     doBadDiv.bind(null, client),

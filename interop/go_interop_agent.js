@@ -55,7 +55,6 @@ var os = require('os');
 
 /* Need to wait around 3s to ensure Go server is up */
 var STARTUP_WAIT_MILLIS = 3000;
-var SKIP_REASON = 'Go interop tests are not needed';
 var PKG_NAME = 'google.golang.org/grpc';
 var PKGS = Object.freeze([
   PKG_NAME,
@@ -89,7 +88,7 @@ var isThereGo = function isThereGo() {
  */
 var isPidAlive = function isPidAlive(pid) {
   try {
-    process.kill(pid, 0)
+    process.kill(pid, 0);
     return true;
   } catch (e) {
     return false;
@@ -119,23 +118,22 @@ function GoAgent(opts) {
   this._log = opts.log;
   this.otherServerPids = [];
   this.serverPid = null;
-  this.testRoot = opts.testRoot
-               || process.env.NURPC_TEST_ROOT
-               || DEFAULT_TEST_ROOT;
+  this.testRoot = opts.testRoot || process.env.NURPC_TEST_ROOT ||
+      DEFAULT_TEST_ROOT;
   this.forceRun = false;
 
   /**
    * testDir is the Go specific test directory.
    */
   Object.defineProperty(this, 'testDir', {
-    get: function() { return path.join(this.testRoot, 'go') }
+    get: function() { return path.join(this.testRoot, 'go'); }
   });
 
   /**
    * testServerDir is the directory of the Go server binary.
    */
   Object.defineProperty(this, 'testServerDir', {
-    get: function() { return path.join(this.testDir, 'src', SERVER_PATH) }
+    get: function() { return path.join(this.testDir, 'src', SERVER_PATH); }
   });
 
   /**
@@ -143,25 +141,21 @@ function GoAgent(opts) {
    * invoking the test client or server.
    */
   Object.defineProperty(this, 'testEnv', {
-    get: function() {
-      var env = Object.create(process.env);
-      env['GOPATH'] = this.testDir;
-      return env;
-    }
+    get: function() { return _.merge({'GOPATH': this.testDir}, process.env); }
   });
 
   /**
    * testClientDir is the directory of the Go client binary.
    */
   Object.defineProperty(this, 'testClientDir', {
-    get: function() { return path.join(this.testDir, 'src', CLIENT_PATH) }
+    get: function() { return path.join(this.testDir, 'src', CLIENT_PATH); }
   });
 
   /**
    * shouldRun determines if the Go interop test should run?
    */
   Object.defineProperty(this, 'shouldRun', {
-    get: function() { return this.forceRun || isThereGo() }
+    get: function() { return this.forceRun || isThereGo(); }
   });
 
   /**
@@ -169,7 +163,7 @@ function GoAgent(opts) {
    */
   Object.defineProperty(this, 'isServerRunning', {
     get: function() {
-      return !_.isNull(this.serverPid) && isPidAlive(this.serverPid)
+      return !_.isNull(this.serverPid) && isPidAlive(this.serverPid);
     }
   });
 }
@@ -193,7 +187,7 @@ GoAgent.prototype._setupAndInstall =
       })
     );
     async.series(tasks, done);
-  }
+  };
 
 GoAgent.prototype.startServer = function startServer(secure, done) {
   if (this.isServerRunning) {
@@ -206,7 +200,7 @@ GoAgent.prototype.startServer = function startServer(secure, done) {
     'run', 'server.go',
     '--use_tls=' + use_tls,
     '--port=' + this.port
-  ]
+  ];
   if (this._log) {
     this._log.info({
       args: args,
@@ -246,14 +240,14 @@ GoAgent.prototype.startServer = function startServer(secure, done) {
     }
   }.bind(this);
   setTimeout(waitForServer, STARTUP_WAIT_MILLIS);
-}
+};
 
 GoAgent.prototype.stopServer = function stopServer() {
   if (!this.isServerRunning) {
     return;
   }
   stopProcess(this.serverPid);
-}
+};
 
 GoAgent.prototype.runInteropTest =
   function runInteropTest(testCase, opts, next) {
