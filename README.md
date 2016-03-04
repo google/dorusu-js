@@ -123,7 +123,6 @@ main();
 Try it out
 
 ```shell
-
 node helloworld_server.js &
 node helloworld_client.js
 node helloworld_client.js nurpc
@@ -133,7 +132,6 @@ node helloworld_client.js nurpc
 
 You can also try out the large examples math_server and math_client
 ```shell
-
 # (from this directory)
 example/math_server.js &
 
@@ -149,7 +147,6 @@ example/math_client.js
 ### INSTALLATION
 - At the moment the package is unpublished so it needs to be installed from source.
 ```shell
-
 # (from this directory)
 npm update
 
@@ -158,14 +155,12 @@ npm update
 
 Try it out with much nicer log output by installing [bunyan][]
 ```shell
-
 npm install -g bunyan # installs bunyan, may require sudo depending on how node is set up
 # (from this directory)
 HTTP2_LOG=info example/math_server.js | bunyan -o short &
 # (same directory, another terminal window)
 example/math_client.js
 HTTP2_LOG=info example/math_client.js | bunyan -o short
-
 ```
 
 ### TESTING
@@ -173,7 +168,6 @@ To run the test suite, simply run `npm test` in the install location.
 
 You can also run the interop test client/server:
 ```shell
-
 # (from this directory)
 # Install bunyan to give readable logs
 [sudo] npm install -g bunyan # installs bunyan, gives good interop output
