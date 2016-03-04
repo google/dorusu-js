@@ -1,13 +1,22 @@
-# Nurpc - gRPC for Node.js in Node.js
+# Nurpc - gRPC for Node.js in javascript
 
+This is not an official Google project.
 
-### Status
-- Most interop tests, including (auth tests) pass running against the production interop server
-  - Last Step (11/21/2015): Added auth interop tests, verified them against the production interop server
-  - Next Step: Error pass, add any outstanding beta interop tests
-  - Next Next Step: Write sample code accessing the logging service, a simple google service
-- Issues
-  - Interop server rejects secure requests in Node 5.0, but works in Node 0.12.7, need to confirm in Node 4.0 and fix it.
+The official Google-maintained implementation of gRPC for node.js is available
+at [grpc-nodejs][https://github.com/grpc/grpc/tree/master/src/node].
+
+This is an alternate implementation written in javascript by a Googler. It
+
+- interoperates successfully with any official gRPC implementations, i.e it
+  implements the
+  [gRPC spec](https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md)
+  and passes all the core
+  [gRPC interop tests](https://github.com/grpc/grpc/blob/master/doc/interop-test-descriptions.md)
+
+- deliberately has an [incompatible API surface](#design_summary), i.e, do not
+  expect code written using this library to be a drop-in replacement for code
+  written using the official library
+
 
 ### EXAMPLES
 
