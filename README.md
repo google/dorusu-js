@@ -1,13 +1,23 @@
-# Nurpc - gRPC for Node.js in Node.js
+# Nurpc - gRPC for Node.js in javascript
 
+This is not an official Google project.
 
-### Status
-- Most interop tests, including (auth tests) pass running against the production interop server
-  - Last Step (11/21/2015): Added auth interop tests, verified them against the production interop server
-  - Next Step: Error pass, add any outstanding beta interop tests
-  - Next Next Step: Write sample code accessing the logging service, a simple google service
-- Issues
-  - Interop server rejects secure requests in Node 5.0, but works in Node 0.12.7, need to confirm in Node 4.0 and fix it.
+The official Google-maintained implementation of gRPC for node.js is available
+at [grpc-nodejs](https://github.com/grpc/grpc/tree/master/src/node).
+
+This is an alternate implementation written in javascript by a Googler. It
+
+- interoperates successfully with any official gRPC implementations, i.e it
+  implements the
+  [gRPC spec](https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md)
+  and passes all the core
+  [gRPC interop tests](https://github.com/grpc/grpc/blob/master/doc/interop-test-descriptions.md)
+
+- deliberately has an [incompatible API surface](#design_summary), i.e, do not
+  expect code written using this library to be a drop-in replacement for code
+  written using the official library.  The idea is that the api surface is
+  more consistent with existing node.js code.
+
 
 ### EXAMPLES
 
@@ -114,19 +124,23 @@ main();
 Try it out
 
 ```shell
-$
-$ node helloworld_server.js &
-$ node helloworld_client.js
-$ node helloworld_client.js nurpc
+
+node helloworld_server.js &
+node helloworld_client.js
+node helloworld_client.js nurpc
+
 ```
 
 
 You can also try out the large examples math_server and math_client
 ```shell
-$ # (from this directory)
-$ example/math_server.js &
-$ # (same directory, another terminal window)
-$ example/math_client.js
+
+# (from this directory)
+example/math_server.js &
+
+# (same directory, another terminal window)
+example/math_client.js
+
 ```
 
 ### PREREQUISITES
@@ -136,19 +150,23 @@ $ example/math_client.js
 ### INSTALLATION
 - At the moment the package is unpublished so it needs to be installed from source.
 ```shell
-$ # (from this directory)
-$ npm update
+
+# (from this directory)
+npm update
+
 ```
 
 
 Try it out with much nicer log output by installing [bunyan][]
 ```shell
-$ npm install -g bunyan # installs bunyan, may require sudo depending on how node is set up
-$ # (from this directory)
-$ HTTP2_LOG=info example/math_server.js | bunyan -o short &
-$ # (same directory, another terminal window)
-$ example/math_client.js
-$ HTTP2_LOG=info example/math_client.js | bunyan -o short
+
+npm install -g bunyan # installs bunyan, may require sudo depending on how node is set up
+# (from this directory)
+HTTP2_LOG=info example/math_server.js | bunyan -o short &
+# (same directory, another terminal window)
+example/math_client.js
+HTTP2_LOG=info example/math_client.js | bunyan -o short
+
 ```
 
 ### TESTING
@@ -156,27 +174,30 @@ To run the test suite, simply run `npm test` in the install location.
 
 You can also run the interop test client/server:
 ```shell
-$ # (from this directory)
-$ # Install bunyan to give readable logs
-$ [sudo] npm install -g bunyan # installs bunyan, gives good interop output
-$
-$ # Run against the production test server
-$ HTTP2_LOG=info interop/interop_client.js \
-  --server_host grpc-test.sandbox.google.com \
-  --server_port 443 \
-  --secure \
-  --test_case all | bunyan -o short
-$
-$ # Run against a node interop test server
-$ HTTP2_LOG=info interop/interop_server.js -p 50443 | bunyan -o short # (in one terminal)
-$ HTTP2_LOG=info interop/interop_client.js \
-  --server_host localhost \
-  --server_port 50443 \
-  --secure \
-  --test_case all | bunyan -o short  # in another terminal
+
+# (from this directory)
+# Install bunyan to give readable logs
+[sudo] npm install -g bunyan # installs bunyan, gives good interop output
+
+# Run against the production test server
+HTTP2_LOG=info interop/interop_client.js \
+--server_host grpc-test.sandbox.google.com \
+--server_port 443 \
+--secure \
+--test_case all | bunyan -o short
+
+# Run against a node interop test server
+HTTP2_LOG=info interop/interop_server.js -p 50443 | bunyan -o short # (in one terminal)
+HTTP2_LOG=info interop/interop_client.js \
+--server_host localhost \
+--server_port 50443 \
+--secure \
+--test_case all | bunyan -o short  # in another terminal
+
 ```
 
 ### DESIGN SUMMARY
+
 
 nurpc aims to provide strongly-idiomatic client and server implementations supporting the gRPC protocol.
 
