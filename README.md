@@ -15,8 +15,7 @@ This is an alternate implementation written in javascript by a Googler. It
 
 - deliberately has an [incompatible API surface](#design_summary), i.e, do not
   expect code written using this library to be a drop-in replacement for code
-  written using the official library.  The idea is that the api surface is
-  more consistent with existing node.js code.
+  written using the official library
 
 
 ### EXAMPLES
