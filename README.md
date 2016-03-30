@@ -52,9 +52,9 @@ Serve greetings with a server: helloworld_server.js
 
 ```javascript
 
-var app = require('nurpc/app');
-var protobuf = require('nurpc/protobuf');
-var server = require('nurpc/server');
+var app = require('dorusu/app');
+var protobuf = require('dorusu/protobuf');
+var server = require('dorusu/server');
 
 /**
  * Implements the SayHello RPC method.
@@ -95,8 +95,8 @@ main();
 Access greetings with a client: helloworld_client.js
 
 ```javascript
-var buildClient = require('nurpc/client').buildClient;
-var protobuf = require('nurpc/protobuf');
+var buildClient = require('dorusu/client').buildClient;
+var protobuf = require('dorusu/protobuf');
 
 function main() {
   var hellopb = protobuf.loadProto(path.join(__dirname, 'helloworld.proto'));
@@ -125,7 +125,7 @@ Try it out
 ```shell
 node helloworld_server.js &
 node helloworld_client.js
-node helloworld_client.js nurpc
+node helloworld_client.js dorusu
 
 ```
 
@@ -192,9 +192,9 @@ HTTP2_LOG=info interop/interop_client.js \
 ### DESIGN SUMMARY
 
 
-nurpc aims to provide strongly-idiomatic client and server implementations supporting the gRPC protocol.
+dorusu aims to provide strongly-idiomatic client and server implementations supporting the gRPC protocol.
 
-The main governing power behind the nurpc API design is that it provides elements similar to the existing node.js [HTTP2 API][], node-http2, (which is in turn very similar to the node [HTTP API]/[HTTPS API]).
+The main governing power behind the dorusu API design is that it provides elements similar to the existing node.js [HTTP2 API][], node-http2, (which is in turn very similar to the node [HTTP API]/[HTTPS API]).
 
 In part, the similarity comes from re-use via extension of classes defined in node-http2.  In other cases the classes have been copied and modified to enforce additional restrictions the [RPC Protocol][] places on the use [HTTP2][].
 

@@ -46,7 +46,7 @@ var insecureOptions = require('./util').insecureOptions;
 var irreverser = require('./util').irreverser;
 var listenOnFreePort = require('./util').listenOnFreePort;
 var reverser = require('./util').reverser;
-var nurpc = require('../lib/nurpc');
+var dorusu = require('../lib/dorusu');
 var secureOptions = require('../example/certs').options;
 var serverLog = require('./util').serverLog;
 
@@ -58,7 +58,7 @@ var Stub = require('../lib/client').Stub;
 //
 //
 // - start a http2 server, i.e, do not assume the rpc server is available
-// - send a request via the nurpc client
+// - send a request via the dorusu client
 // - verify behaviour on the server using the http2 library + decodeMessage
 // - respond using the http2 library + encodeMessage
 // - verify the expected client response
@@ -111,7 +111,7 @@ describe('Service Client', function() {
             response.on('end', function() {
               expect(theStatus).to.deep.equal({
                 'message': '',
-                'code': nurpc.rpcCode('OK')
+                'code': dorusu.rpcCode('OK')
               });
               expect(theError).to.be.undefined();
               expect(count).to.eql(2);
@@ -132,7 +132,7 @@ describe('Service Client', function() {
           };
           request.on('data', function(data) {
             count += 1;
-            response.addTrailers({'grpc-status': nurpc.rpcCode('OK')});
+            response.addTrailers({'grpc-status': dorusu.rpcCode('OK')});
             decodeMessage(data, null, validateReqThenRespond);
           });
         };
@@ -196,7 +196,7 @@ describe('Base RPC Client', function() {
               response.on('end', function() {
                 expect(theStatus).to.deep.equal({
                   'message': '',
-                  'code': nurpc.rpcCode('OK')
+                  'code': dorusu.rpcCode('OK')
                 });
                 expect(theError).to.be.undefined();
                 expect(count).to.eql(2);
@@ -216,7 +216,7 @@ describe('Base RPC Client', function() {
             };
             request.on('data', function(data) {
               count += 1;
-              response.addTrailers({'grpc-status': nurpc.rpcCode('OK')});
+              response.addTrailers({'grpc-status': dorusu.rpcCode('OK')});
               decodeMessage(data, null, validateReqThenRespond);
             });
           };
@@ -251,7 +251,7 @@ describe('Base RPC Client', function() {
               response.on('end', function() {
                 expect(theStatus).to.deep.equal({
                   'message': '',
-                  'code': nurpc.rpcCode('OK')
+                  'code': dorusu.rpcCode('OK')
                 });
                 expect(theError).to.be.undefined();
                 srv.close();
@@ -266,7 +266,7 @@ describe('Base RPC Client', function() {
               encodeMessage(wantedReply, null, makeSendEncodedResponse(response));
             };
             request.on('data', function(data) {
-              response.addTrailers({'grpc-status': nurpc.rpcCode('OK')});
+              response.addTrailers({'grpc-status': dorusu.rpcCode('OK')});
               decodeMessage(data, null, validateReqThenRespond);
             });
           };
@@ -512,7 +512,7 @@ describe('Base RPC Client', function() {
           var nowPlusHalfSec = Date.now() + 500; // 500 ms
           testDeadline.setTime(nowPlusHalfSec);
           headers.deadline = testDeadline;
-          var wantedCode = nurpc.rpcCode('DEADLINE_EXCEEDED');
+          var wantedCode = dorusu.rpcCode('DEADLINE_EXCEEDED');
           var thisTest = function(srv, stub) {
             var req = stub.post(path, msg, _.noop, { headers: headers});
             req.on('cancel', function(code) {
@@ -554,7 +554,7 @@ describe('Base RPC Client', function() {
             response.setHeader('content-type', 'not-counted-as-metadata');
             response.setHeader('user-agent', 'not-counted-as-metadata');
             response.addTrailers({
-              'grpc-status': nurpc.rpcCode('OK'),
+              'grpc-status': dorusu.rpcCode('OK'),
               'grpc-message': 'not-counted-as-metadata'
             });
             response.sendDate = false;  // by default the date header gets sent
@@ -592,7 +592,7 @@ describe('Base RPC Client', function() {
             response.addTrailers({
               'my-trailer': 'my-trailer-value',
               'content-type': 'this-is-reserved-and-is-not-metadata',
-              'grpc-status': nurpc.rpcCode('OK'),
+              'grpc-status': dorusu.rpcCode('OK'),
               'grpc-message': 'not-counted-as-metadata'
             });
             response.sendDate = false;  // by default the date header gets sent
@@ -629,7 +629,7 @@ describe('Base RPC Client', function() {
             response.setHeader(
               'my-header', ['my-header-value', 'my-header-value2']);
             response.addTrailers({
-              'grpc-status': nurpc.rpcCode('OK'),
+              'grpc-status': dorusu.rpcCode('OK'),
               'grpc-message': 'not-counted-as-metadata'
             });
             response.sendDate = false;  // stop 'date' from being sent
@@ -666,7 +666,7 @@ describe('Base RPC Client', function() {
             response.setHeader(
               'my-header-bin', buf.toString('base64'));
             response.addTrailers({
-              'grpc-status': nurpc.rpcCode('OK'),
+              'grpc-status': dorusu.rpcCode('OK'),
               'grpc-message': 'not-counted-as-metadata'
             });
             response.sendDate = false;  // stop 'date' from being sent
@@ -704,7 +704,7 @@ describe('Base RPC Client', function() {
             response.setHeader(
               'my-header-bin', [buf.toString('base64'), buf.toString('base64')]);
             response.addTrailers({
-              'grpc-status': nurpc.rpcCode('OK'),
+              'grpc-status': dorusu.rpcCode('OK'),
               'grpc-message': 'not-counted-as-metadata'
             });
             response.sendDate = false;  // stop 'date' from being sent

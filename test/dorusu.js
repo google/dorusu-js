@@ -35,22 +35,22 @@
 var chai = require('chai');
 chai.use(require('dirty-chai'));
 var expect = chai.expect;
-var nurpc = require('../lib');
+var dorusu = require('../lib');
 
-describe('nurpc', function() {
+describe('dorusu', function() {
   describe('method `isReservedHeader(headerName)`', function() {
     var colonStarters = [':random', ':authority', ':host'];
       colonStarters.forEach(function(h) {
       it('should be true for ' + h, function() {
-        expect(nurpc.isReservedHeader(h)).to.be.true();
+        expect(dorusu.isReservedHeader(h)).to.be.true();
       });
     });
-    nurpc.reservedHeaders.forEach(function(h) {
+    dorusu.reservedHeaders.forEach(function(h) {
       it('should be true for ' + h, function() {
-        expect(nurpc.isReservedHeader(h)).to.be.true();
+        expect(dorusu.isReservedHeader(h)).to.be.true();
       });
       it('should be true for ' + h.toUpperCase(), function() {
-        expect(nurpc.isReservedHeader(h.toUpperCase())).to.be.true();
+        expect(dorusu.isReservedHeader(h.toUpperCase())).to.be.true();
       });
     });
     var unreservedHeaders =  [
@@ -60,17 +60,17 @@ describe('nurpc', function() {
     ];
     unreservedHeaders.forEach(function(h) {
       it('should be false for ' + h, function() {
-        expect(nurpc.isReservedHeader(h)).to.be.false();
+        expect(dorusu.isReservedHeader(h)).to.be.false();
       });
     });
   });
   describe('method `isKnownSecureHeader(headerName)`', function() {
-    nurpc.knownSecureHeaders.forEach(function(h) {
+    dorusu.knownSecureHeaders.forEach(function(h) {
       it('should be true for ' + h, function() {
-        expect(nurpc.isKnownSecureHeader(h)).to.be.true();
+        expect(dorusu.isKnownSecureHeader(h)).to.be.true();
       });
       it('should be true for ' + h.toUpperCase(), function() {
-        expect(nurpc.isKnownSecureHeader(h.toUpperCase())).to.be.true();
+        expect(dorusu.isKnownSecureHeader(h.toUpperCase())).to.be.true();
       });
     });
     var nonSecureHeaders =  [
@@ -80,61 +80,61 @@ describe('nurpc', function() {
     ];
     nonSecureHeaders.forEach(function(h) {
       it('should be false for ' + h, function() {
-        expect(nurpc.isKnownSecureHeader(h)).to.be.false();
+        expect(dorusu.isKnownSecureHeader(h)).to.be.false();
       });
     });
   });
   describe('method `h2NameToRpcName`', function() {
     it('should return UNKNOWN for an invalid name', function() {
-      expect(nurpc.h2NameToRpcName('foo')).to.eql('UNKNOWN');
+      expect(dorusu.h2NameToRpcName('foo')).to.eql('UNKNOWN');
     });
     var unmapped = ['HTTP_1_1_REQUIRED', 'STREAM_CLOSED'];
-    var h2Codes = nurpc.h2Codes;
+    var h2Codes = dorusu.h2Codes;
     h2Codes.forEach(function(c) {
       if (unmapped.indexOf(c) === -1) {
         it('should return a valid name for ' + c, function() {
-          expect(nurpc.h2NameToRpcName(c)).to.be.ok();
-          expect(nurpc.h2NameToRpcName(c)).to.not.eql('UNKNOWN');
+          expect(dorusu.h2NameToRpcName(c)).to.be.ok();
+          expect(dorusu.h2NameToRpcName(c)).to.not.eql('UNKNOWN');
           });
       }
     });
     unmapped.forEach(function(c) {
       it('should return null for ' + c, function() {
-        expect(nurpc.h2NameToRpcName(c)).to.be.null();
+        expect(dorusu.h2NameToRpcName(c)).to.be.null();
       });
     });
   });
 
   describe('method `rpcCode`', function() {
     it('should throw an exception for unknown names', function() {
-      expect(function() { nurpc.rpcCode('foo'); }).to.throw(RangeError);
+      expect(function() { dorusu.rpcCode('foo'); }).to.throw(RangeError);
     });
-    nurpc.rpcCodes.forEach(function(c) {
+    dorusu.rpcCodes.forEach(function(c) {
       it('should return a valid code for ' + c, function() {
-        expect(nurpc.rpcCode(c)).to.be.at.least(0);
+        expect(dorusu.rpcCode(c)).to.be.at.least(0);
       });
     });
   });
 
   describe('method `blockSecureHeader`', function() {
-    nurpc.knownSecureHeaders.forEach(function(c) {
+    dorusu.knownSecureHeaders.forEach(function(c) {
       it('initally, should throw an exception for ' + c, function() {
-        expect(function() { nurpc.blockSecureHeader(c); }).to.throw(Error);
+        expect(function() { dorusu.blockSecureHeader(c); }).to.throw(Error);
       });
       describe('with secureHeaderPolicy as WARN', function() {
         it('should be false for ' + c, function() {
-          nurpc.configure({
-            secureHeaderPolicy: nurpc.WARN_POLICY
+          dorusu.configure({
+            secureHeaderPolicy: dorusu.WARN_POLICY
           });
-          expect(nurpc.blockSecureHeader(c)).to.be.false();
+          expect(dorusu.blockSecureHeader(c)).to.be.false();
         });
       });
       describe('with secureHeaderPolicy as DROP', function() {
         it('should be false for ' + c, function() {
-          nurpc.configure({
-            secureHeaderPolicy: nurpc.DROP_POLICY
+          dorusu.configure({
+            secureHeaderPolicy: dorusu.DROP_POLICY
           });
-          expect(nurpc.blockSecureHeader(c)).to.be.true();
+          expect(dorusu.blockSecureHeader(c)).to.be.true();
         });
       });
     });

@@ -8,7 +8,7 @@
       "lib/client.js",
       "lib/codec.js",
       "lib/protobuf.js",
-      "lib/nurpc.js",
+      "lib/dorusu.js",
       "lib/server.js"
     ]
   },

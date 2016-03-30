@@ -34,7 +34,7 @@
 'use strict';
 
 /**
- * nurpc/example/math_server is an server implementing the math.Math service.
+ * dorusu/example/math_server is an server implementing the math.Math service.
  *
  * The math.Math service is defined in math.proto.
  *
@@ -55,7 +55,7 @@
  * $ example/math_server.js -h
  * ```
  *
- * @module nurpc/example/math_server
+ * @module dorusu/example/math_server
  */
 
 var _ = require('lodash');
@@ -64,7 +64,7 @@ var bunyan = require('bunyan');
 var http2 = require('http2');
 var insecureOptions = require('../test/util').insecureOptions;
 var path = require('path');
-var nurpc = require('../lib');
+var dorusu = require('../lib');
 var secureOptions = require('../test/util').secureOptions;
 
 var ArgumentParser = require('argparse').ArgumentParser;
@@ -83,7 +83,7 @@ function mathDiv(request, response) {
   request.on('data', function(msg) {
     if (+msg.divisor === 0) {
       response.rpcMessage = 'cannot divide by zero';
-      response.rpcCode = nurpc.rpcCode('INVALID_ARGUMENT');
+      response.rpcCode = dorusu.rpcCode('INVALID_ARGUMENT');
       response.end();
     } else {
       response.write({
@@ -183,7 +183,7 @@ var parseArgs = function parseArgs() {
  * @returns {app.RpcApp} providing the math service implementation
  */
 var buildApp = exports.buildApp = function buildApp() {
-  var mathpb = nurpc.pb.loadProto(path.join(__dirname, 'math.proto'));
+  var mathpb = dorusu.pb.loadProto(path.join(__dirname, 'math.proto'));
   var a = new app.RpcApp(mathpb.math.Math.server);
   a.register('/math.Math/DivMany', mathDiv);
   a.register('/math.Math/Div', mathDiv);
@@ -211,9 +211,9 @@ var main = function main() {
   var s;
   if (args.use_tls) {
     _.merge(opts, secureOptions);
-    s = nurpc.createServer(opts);
+    s = dorusu.createServer(opts);
   } else {
-    s = nurpc.raw.createServer(opts);
+    s = dorusu.raw.createServer(opts);
     _.merge(opts, insecureOptions);
   }
   s.listen(args.port);

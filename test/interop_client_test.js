@@ -40,7 +40,7 @@ var http2 = require('http2');
 var insecureOptions = require('./util').insecureOptions;
 var interopClient = require('../interop/interop_client');
 var listenOnFreePort = require('./util').listenOnFreePort;
-var nurpc = require('../lib');
+var dorusu = require('../lib');
 var path = require('path');
 var secureOptions = require('../example/certs').options;
 
@@ -54,8 +54,8 @@ var testOptions = {
 };
 
 describe('Interop Client', function() {
-  var testpb = nurpc.pb.loadProto(path.join(__dirname, '../interop/test.proto'));
-  var Ctor = nurpc.buildClient(testpb.grpc.testing.TestService.client);
+  var testpb = dorusu.pb.loadProto(path.join(__dirname, '../interop/test.proto'));
+  var Ctor = dorusu.buildClient(testpb.grpc.testing.TestService.client);
   var theClient, server, serverAddr;
   _.forEach(testOptions, function(serverOpts, connType) {
     describe(connType, function() {
@@ -98,8 +98,8 @@ function makeServer(opts) {
   opts = _.clone(opts);
   opts.log = serverLog;
   if (opts.plain) {
-    return nurpc.raw.createServer(opts, nurpc.unavailable);
+    return dorusu.raw.createServer(opts, dorusu.unavailable);
   } else {
-    return nurpc.createServer(opts, nurpc.unavailable);
+    return dorusu.createServer(opts, dorusu.unavailable);
   }
 }

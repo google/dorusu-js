@@ -33,10 +33,10 @@
 'use strict';
 
 /**
- * nurpc/example/certs gives access to the test credentials used in examples
+ * dorusu/example/certs gives access to the test credentials used in examples
  * and tests.
  *
- * @module nurpc/example/certs
+ * @module dorusu/example/certs
  */
 
 var _ = require('lodash');

@@ -34,7 +34,7 @@
 'use strict';
 
 /**
- * nurpc/interop/interop_client is the client for the grpc.testing.TestService
+ * dorusu/interop/interop_client is the client for the grpc.testing.TestService
  *
  * It implements the service defined in test.proto, which is used to validate
  * rpc protocol implementations.
@@ -57,7 +57,7 @@
  * $ interop_client.js -h
  * ```
  *
- * @module nurpc/interop/interop_client
+ * @module dorusu/interop/interop_client
  */
 
 var _ = require('lodash');
@@ -69,7 +69,7 @@ var expect = chai.expect;
 var http2 = require('http2');
 var insecureOptions = require('../test/util').insecureOptions;
 var path = require('path');
-var nurpc = require('../lib');
+var dorusu = require('../lib');
 var secureOptions = require('../example/certs').clientOptions;
 
 var ArgumentParser = require('argparse').ArgumentParser;
@@ -77,7 +77,7 @@ var Readable = require('stream').Readable;
 var PassThrough = require('stream').PassThrough;
 
 // Setup functions to use the default (noop) logger; main() resets this.
-var log = nurpc.noopLogger;
+var log = dorusu.noopLogger;
 
 /**
  * Create a buffer filled with `size` zeroes.
@@ -99,7 +99,7 @@ function zeroes(size) {
  *   headers passed and invokes done with the result
  */
 var addAuthFromOobADC = function addAuthFromOobADC(opt_scopes) {
-  var oob = nurpc.addAuthFromADC(opt_scopes);
+  var oob = dorusu.addAuthFromADC(opt_scopes);
   var token;
 
   /**
@@ -211,7 +211,7 @@ exports.computeEngine = function computeEngine(Ctor, opts, args, next) {
     response_size: 314159,
     response_type: 'COMPRESSABLE'
   };
-  opts.updateHeaders = nurpc.addAuthFromADC();  // no scope needed on GCE
+  opts.updateHeaders = dorusu.addAuthFromADC();  // no scope needed on GCE
   var client = new Ctor(opts);
   client.unaryCall(req, function(response) {
     response.on('end', onEnd);
@@ -239,7 +239,7 @@ exports.jwtTokenCreds = function jwtTokenCreds(Ctor, opts, args, next) {
   };
 
   // Run the test.
-  opts.updateHeaders = nurpc.addAuthFromADC();  // no scopes for jwt token
+  opts.updateHeaders = dorusu.addAuthFromADC();  // no scopes for jwt token
   var client = new Ctor(opts);
   var req = {
     fill_oauth_scope: true,
@@ -338,7 +338,7 @@ exports.perRpcCreds = function perRpcCreds(Ctor, opts, args, next) {
     response.on('end', onEnd);
     response.on('data', saveMessage);
   }, {
-    updateHeaders: nurpc.addAuthFromADC(args.oauth_scope)
+    updateHeaders: dorusu.addAuthFromADC(args.oauth_scope)
   });
 };
 
@@ -364,7 +364,7 @@ exports.serviceAccount = function serviceAccount(Ctor, opts, args, next) {
   };
 
   // Run the test.
-  opts.updateHeaders = nurpc.addAuthFromADC(args.oauth_scope);
+  opts.updateHeaders = dorusu.addAuthFromADC(args.oauth_scope);
   var client = new Ctor(opts);
   var req = {
     fill_oauth_scope: true,
@@ -409,7 +409,7 @@ exports.clientStreaming = function clientStreaming(client, next) {
 exports.cancelAfterBegin = function cancelAfterBegin(client, next) {
   var done = next || _.noop;
   var verifyWasCancelled = function verifyWasCancelled(code) {
-    var wantedCode = nurpc.rpcCode('CANCELLED');
+    var wantedCode = dorusu.rpcCode('CANCELLED');
     expect(code).to.equal(wantedCode);
     log.info('Verified: OK, cancelAfterBegin had cancelled OK');
     done();
@@ -759,8 +759,8 @@ var main = function main() {
       rejectUnauthorized: false
     });
   }
-  var testpb = nurpc.pb.loadProto(path.join(__dirname, 'test.proto'));
-  var Ctor = nurpc.buildClient(testpb.grpc.testing.TestService.client);
+  var testpb = dorusu.pb.loadProto(path.join(__dirname, 'test.proto'));
+  var Ctor = dorusu.buildClient(testpb.grpc.testing.TestService.client);
 
   if (_.has(exports.withoutAuthTests, args.test_case)) {
     var client = new Ctor(opts);

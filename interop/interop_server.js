@@ -34,7 +34,7 @@
 'use strict';
 
 /**
- * nurpc/interop/interop_server implements the rpc servers interoperability
+ * dorusu/interop/interop_server implements the rpc servers interoperability
  * server.
  *
  * It implements the service defined in test.proto, which is used to validate
@@ -58,7 +58,7 @@
  * $ example/interop_server.js -h
  * ```
  *
- * @module nurpc/interop/interop_server
+ * @module dorusu/interop/interop_server
  */
 
 var _ = require('lodash');
@@ -66,9 +66,9 @@ var app = require('../lib/app');
 var bunyan = require('bunyan');
 var http2 = require('http2');
 var insecureOptions = require('../test/util').insecureOptions;
-var nurpc = require('../lib');
+var dorusu = require('../lib');
 var path = require('path');
-var protobuf = nurpc.pb;
+var protobuf = dorusu.pb;
 
 var secureOptions = require('../example/certs').serverOptions;
 
@@ -185,7 +185,7 @@ var buildApp = exports.buildApp = function buildApp() {
   a.register('/grpc.testing.TestService/FullDuplexCall',
              streamingOutputCall);
   a.register('/grpc.testing.TestService/HalfDuplexCall',
-             nurpc.notFound);
+             dorusu.notFound);
   return a;
 };
 
@@ -241,9 +241,9 @@ var main = function main() {
   var s;
   if (args.use_tls) {
     _.merge(opts, secureOptions);
-    s = nurpc.createServer(opts);
+    s = dorusu.createServer(opts);
   } else {
-    s = nurpc.raw.createServer(opts);
+    s = dorusu.raw.createServer(opts);
     _.merge(opts, insecureOptions);
   }
   s.listen(args.port);

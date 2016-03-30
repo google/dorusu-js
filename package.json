@@ -1,5 +1,5 @@
 {
-  "name": "nurpc",
+  "name": "dorusu",
   "version": "0.3.0",
   "description": "An implementation of gRPC in Javascript",
   "main": "lib/index.js",
@@ -9,7 +9,7 @@
     "mocha": "~2.2"
   },
   "bin": {
-    "nurpc_js_interop_client": "interop/interop_client.js",
+    "dorusu_js_interop_client": "interop/interop_client.js",
     "math_client.js": "example/math_client.js",
     "math_server.js": "example/math_server.js"
   },

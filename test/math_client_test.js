@@ -40,14 +40,14 @@ var http2 = require('http2');
 var insecureOptions = require('./util').insecureOptions;
 var listenOnFreePort = require('./util').listenOnFreePort;
 var mathClient = require('../example/math_client');
-var nurpc = require('../lib');
+var dorusu = require('../lib');
 var path = require('path');
 var secureOptions = require('../example/certs').options;
 
 http2.globalAgent = new http2.Agent({ log: clientLog });
 
-var mathpb = nurpc.pb.loadProto(path.join(__dirname, '../example/math.proto'));
-var mathClientCls = nurpc.buildClient(mathpb.math.Math.client);
+var mathpb = dorusu.pb.loadProto(path.join(__dirname, '../example/math.proto'));
+var mathClientCls = dorusu.buildClient(mathpb.math.Math.client);
 var testOptions = {
   secure: secureOptions,
   insecure: insecureOptions
@@ -94,8 +94,8 @@ function makeServer(opts) {
   opts = _.clone(opts);
   opts.log = serverLog;
   if (opts.plain) {
-    return nurpc.raw.createServer(opts, nurpc.unavailable);
+    return dorusu.raw.createServer(opts, dorusu.unavailable);
   } else {
-    return nurpc.createServer(opts, nurpc.unavailable);
+    return dorusu.createServer(opts, dorusu.unavailable);
   }
 }

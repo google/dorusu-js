@@ -41,7 +41,7 @@ var path = require('path');
 var os = require('os');
 
 /**
- * nurpc/interop/go_interop_agent provides a class GoAgent that supports
+ * dorusu/interop/go_interop_agent provides a class GoAgent that supports
  * running the Go interop tests in test cases.
  *
  * It can also be run as a script that install, launches and runs the GoAgent
@@ -69,7 +69,7 @@ var PKGS = Object.freeze([
 var CLIENT_PATH = PKG_NAME + '/interop/client';
 var SERVER_PATH = PKG_NAME + '/interop/server';
 var SERVER_PORT = 50443;
-var DEFAULT_TEST_ROOT = path.join(os.tmpdir(), 'nurpc_tests');
+var DEFAULT_TEST_ROOT = path.join(os.tmpdir(), 'dorusu_tests');
 
 /**
  * Is Go available ?

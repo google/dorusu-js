@@ -35,7 +35,7 @@
 
 
 /**
- * nurpc/example/math_client is an example client for the math.Math service.
+ * dorusu/example/math_client is an example client for the math.Math service.
  *
  * The math.Math service is defined in math.proto.
  *
@@ -56,7 +56,7 @@
  * $ example/math_client.js -h
  * ```
  *
- * @module nurpc/example/math_client
+ * @module dorusu/example/math_client
  */
 
 var _ = require('lodash');
@@ -66,7 +66,7 @@ var expect = require('chai').expect;
 var http2 = require('http2');
 var insecureOptions = require('../test/util').insecureOptions;
 var path = require('path');
-var nurpc = require('../lib');
+var dorusu = require('../lib');
 var secureOptions = require('../test/util').secureClientOptions;
 
 var ArgumentParser = require('argparse').ArgumentParser;
@@ -74,7 +74,7 @@ var Readable = require('stream').Readable;
 
 // By default, functions use the (noop) logger; main() assigns a real
 // logger implementation.
-var log = nurpc.noopLogger;
+var log = dorusu.noopLogger;
 
 exports.doOkDiv = function doOkDiv(client, next) {
   var done = next || _.noop;
@@ -129,7 +129,7 @@ exports.doBadDiv = function doBadDiv(client, next) {
     });
     response.on('data', _.noop);
     response.on('error', function(error) {
-      expect(error.code).to.eql(nurpc.rpcCode('INVALID_ARGUMENT'));
+      expect(error.code).to.eql(dorusu.rpcCode('INVALID_ARGUMENT'));
       log.info('Verified: bad div:', req, 'fails');
     });
   });
@@ -240,8 +240,8 @@ var main = function main() {
   } else {
     _.merge(opts, insecureOptions);
   }
-  var mathpb = nurpc.pb.loadProto(path.join(__dirname, 'math.proto'));
-  var Ctor = nurpc.buildClient(mathpb.math.Math.client);
+  var mathpb = dorusu.pb.loadProto(path.join(__dirname, 'math.proto'));
+  var Ctor = dorusu.buildClient(mathpb.math.Math.client);
   var client = new Ctor(opts);
   async.series([
     doOkDiv.bind(null, client),

@@ -41,7 +41,7 @@ var insecureOptions = require('./util').insecureOptions;
 var interopClient = require('../interop/interop_client');
 var listenOnFreePort = require('./util').listenOnFreePort;
 var nextAvailablePort = require('./util').nextAvailablePort;
-var nurpc = require('../lib');
+var dorusu = require('../lib');
 var path = require('path');
 
 var GoAgent = require('../interop/go_interop_agent').GoAgent;
@@ -61,8 +61,8 @@ describe('External Interop Nodejs/Go', function() {
   this.slow(5000);
   this.timeout(8000);
 
-  var testpb = nurpc.pb.loadProto(TEST_PROTO_PATH);
-  var Ctor = nurpc.buildClient(testpb.grpc.testing.TestService.client);
+  var testpb = dorusu.pb.loadProto(TEST_PROTO_PATH);
+  var Ctor = dorusu.buildClient(testpb.grpc.testing.TestService.client);
   var theClient, agent;
   _.forEach(testClientOptions, function(serverOpts, connType) {
     describe(connType, function() {
@@ -163,9 +163,9 @@ function makeNodeServer(opts) {
   opts = _.clone(opts);
   opts.log = serverLog;
   if (opts.plain) {
-    return nurpc.raw.createServer(opts, nurpc.unavailable);
+    return dorusu.raw.createServer(opts, dorusu.unavailable);
   } else {
-    return nurpc.createServer(opts, nurpc.unavailable);
+    return dorusu.createServer(opts, dorusu.unavailable);
   }
 }
 

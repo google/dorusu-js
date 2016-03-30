@@ -62,7 +62,7 @@ Here are a few examples:
 
 ```
 * Obtains the instance email and key from gtoken ([@tbetbetbe][])
-* [#36](google/nurpc#1) Adds an implementation of IAM authorization ([@tbetbetbe][])
+* [#36](google/dorusu#1) Adds an implementation of IAM authorization ([@tbetbetbe][])
 ```
 
 

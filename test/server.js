@@ -40,7 +40,7 @@ var irreverser = require('./util').irreverser;
 var insecureOptions = require('./util').insecureOptions;
 var listenOnFreePort = require('./util').listenOnFreePort;
 var reverser = require('./util').reverser;
-var nurpc = require('../lib');
+var dorusu = require('../lib');
 var secureOptions = require('../example/certs').serverOptions;
 var server = require('../lib/server');
 var serverLog = require('./util').serverLog;
@@ -48,7 +48,7 @@ var serverLog = require('./util').serverLog;
 var Stub = require('../lib/client').Stub;
 
 
-// testTable is used to verify nurpc.makeDispatcher.
+// testTable is used to verify dorusu.makeDispatcher.
 var testTable = {
   '/x': function xHandler(request, response) {
     request.once('data', function() {
@@ -86,13 +86,13 @@ testApp.register('/test/do_irreverse', function testHandler(request, response) {
   });
 });
 
-// Tests here can use the nurpc client as it's tests do not depend on RpcServer.
+// Tests here can use the dorusu client as it's tests do not depend on RpcServer.
 //
 // Typically flow is:
 // - start a RpcServer
-// - send a request via the nurpc client
+// - send a request via the dorusu client
 // - verify behaviour on the server without functions from ./codec.js
-// - optionally verify what the client receives using the nurpc
+// - optionally verify what the client receives using the dorusu
 
 describe('RpcServer', function() {
   var nonBinMd = {
@@ -136,11 +136,11 @@ describe('RpcServer', function() {
             response.on('end', function() {
               expect(theStatus).to.deep.equal({
                 'message': '',
-                'code': nurpc.rpcCode('UNKNOWN')
+                'code': dorusu.rpcCode('UNKNOWN')
               });
               expect(theError).to.deep.equal({
                 'message': '',
-                'code': nurpc.rpcCode('UNKNOWN')
+                'code': dorusu.rpcCode('UNKNOWN')
               });
               srv.close();
               done();
@@ -152,13 +152,13 @@ describe('RpcServer', function() {
         appOptions.app = testApp;
         var fallback = function fallback(request, response) {
           // use a different status code than unknown
-          response.rpcCode = nurpc.rpcCode('UNKNOWN');
+          response.rpcCode = dorusu.rpcCode('UNKNOWN');
           response.end('');
         };
         // here, null === no requestListener fallback
         checkClientAndServer(thisClient, fallback, appOptions);
       });
-      it('should use `nurpc.unavailable` as the default fallback', function(done) {
+      it('should use `dorusu.unavailable` as the default fallback', function(done) {
         var thisClient = function(srv, stub) {
           stub.post(path, msg, function(response) {
             var theStatus;
@@ -173,11 +173,11 @@ describe('RpcServer', function() {
             response.on('end', function() {
               expect(theStatus).to.deep.equal({
                 'message': '',
-                'code': nurpc.rpcCode('UNAVAILABLE')
+                'code': dorusu.rpcCode('UNAVAILABLE')
               });
               expect(theError).to.deep.equal({
                 'message': '',
-                'code': nurpc.rpcCode('UNAVAILABLE')
+                'code': dorusu.rpcCode('UNAVAILABLE')
               });
               srv.close();
               done();
@@ -207,7 +207,7 @@ describe('RpcServer', function() {
             response.on('end', function() {
               expect(theStatus).to.deep.equal({
                 'message': '',
-                'code': nurpc.rpcCode('OK')
+                'code': dorusu.rpcCode('OK')
               });
               expect(theError).to.equal(undefined);
               srv.close();
@@ -257,7 +257,7 @@ describe('RpcServer', function() {
         checkClientAndServer(thisClient, _.noop, appOptions);
       });
     });
-    describe(connType + ': `nurpc.makeDispatcher`', function() {
+    describe(connType + ': `dorusu.makeDispatcher`', function() {
       it('should respond with rpcCode 404 for empty table', function(done) {
         var thisClient = function(srv, stub) {
           stub.post(path, msg, function(response) {
@@ -273,11 +273,11 @@ describe('RpcServer', function() {
             response.on('end', function() {
               expect(theStatus).to.deep.equal({
                 'message': '',
-                'code': nurpc.rpcCode('UNAVAILABLE')
+                'code': dorusu.rpcCode('UNAVAILABLE')
               });
               expect(theError).to.deep.equal({
                 'message': '',
-                'code': nurpc.rpcCode('UNAVAILABLE')
+                'code': dorusu.rpcCode('UNAVAILABLE')
               });
               srv.close();
               done();
@@ -285,7 +285,7 @@ describe('RpcServer', function() {
           });
         };
 
-        checkClientAndServer(thisClient, nurpc.makeDispatcher(), serverOptions);
+        checkClientAndServer(thisClient, dorusu.makeDispatcher(), serverOptions);
       });
       it('should respond with rpcCode 404 for unknown routes', function(done) {
         var thisClient = function(srv, stub) {
@@ -302,11 +302,11 @@ describe('RpcServer', function() {
             response.on('end', function() {
               expect(theStatus).to.deep.equal({
                 'message': '',
-                'code': nurpc.rpcCode('UNAVAILABLE')
+                'code': dorusu.rpcCode('UNAVAILABLE')
               });
               expect(theError).to.deep.equal({
                 'message': '',
-                'code': nurpc.rpcCode('UNAVAILABLE')
+                'code': dorusu.rpcCode('UNAVAILABLE')
               });
               srv.close();
               done();
@@ -316,7 +316,7 @@ describe('RpcServer', function() {
 
         var table = _.clone(testTable);
         delete table['/x'];
-        var dispatcher = nurpc.makeDispatcher(table);
+        var dispatcher = dorusu.makeDispatcher(table);
         checkClientAndServer(thisClient, dispatcher, serverOptions);
       });
       it('should respond for configured routes', function(done) {
@@ -334,7 +334,7 @@ describe('RpcServer', function() {
             response.on('end', function() {
               expect(theStatus).to.deep.equal({
                 'message': '',
-                'code': nurpc.rpcCode('OK')
+                'code': dorusu.rpcCode('OK')
               });
               expect(theError).to.equal(undefined);
               srv.close();
@@ -343,11 +343,11 @@ describe('RpcServer', function() {
           });
         };
 
-        var dispatcher = nurpc.makeDispatcher(testTable);
+        var dispatcher = dorusu.makeDispatcher(testTable);
         checkClientAndServer(thisClient, dispatcher, serverOptions);
       });
     });
-    describe(connType + ': `nurpc.unavailable`', function() {
+    describe(connType + ': `dorusu.unavailable`', function() {
       it('should respond with rpcCode 404', function(done) {
         var thisClient = function(srv, stub) {
           stub.post(path, msg, function(response) {
@@ -363,11 +363,11 @@ describe('RpcServer', function() {
             response.on('end', function() {
               expect(theStatus).to.deep.equal({
                 'message': '',
-                'code': nurpc.rpcCode('UNAVAILABLE')
+                'code': dorusu.rpcCode('UNAVAILABLE')
               });
               expect(theError).to.deep.equal({
                 'message': '',
-                'code': nurpc.rpcCode('UNAVAILABLE')
+                'code': dorusu.rpcCode('UNAVAILABLE')
               });
               srv.close();
               done();
@@ -375,7 +375,7 @@ describe('RpcServer', function() {
           });
         };
 
-        checkClientAndServer(thisClient, nurpc.unavailable, serverOptions);
+        checkClientAndServer(thisClient, dorusu.unavailable, serverOptions);
       });
     });
     describe(connType + ': simple request/response', function() {
@@ -396,7 +396,7 @@ describe('RpcServer', function() {
             response.on('end', function() {
               expect(theStatus).to.deep.equal({
                 'message': '',
-                'code': nurpc.rpcCode('OK')
+                'code': dorusu.rpcCode('OK')
               });
               expect(theError).to.equal(undefined);
               srv.close();
@@ -654,9 +654,9 @@ function makeRpcServer(opts, serverExpects) {
   opts = _.clone(opts);
   opts.log = serverLog;
   if (opts.plain) {
-    return nurpc.raw.createServer(opts, serverExpects);
+    return dorusu.raw.createServer(opts, serverExpects);
   } else {
-    return nurpc.createServer(opts, serverExpects);
+    return dorusu.createServer(opts, serverExpects);
   }
 }
 
