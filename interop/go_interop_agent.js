@@ -119,7 +119,7 @@ function GoAgent(opts) {
   this.otherServerPids = [];
   this.serverPid = null;
   this.testRoot = opts.testRoot || process.env.NURPC_TEST_ROOT ||
-      DEFAULT_TEST_ROOT;
+    DEFAULT_TEST_ROOT;
   this.forceRun = false;
 
   /**
@@ -141,7 +141,7 @@ function GoAgent(opts) {
    * invoking the test client or server.
    */
   Object.defineProperty(this, 'testEnv', {
-    get: function() { return _.merge({'GOPATH': this.testDir}, process.env); }
+    get: function() { return _.merge(process.env, {'GOPATH': this.testDir}); }
   });
 
   /**
@@ -171,7 +171,7 @@ GoAgent.prototype =
   Object.create(Object.prototype, { constructor: { value: GoAgent } });
 
 GoAgent.prototype._setupAndInstall =
-  function _setupAnInstall(installDir, done) {
+  function _setupAnInstall(done) {
     fs.mkdirsSync(this.testDir);
     var tasks = [];
     var that = this;
@@ -180,12 +180,18 @@ GoAgent.prototype._setupAndInstall =
         child_process.execFile.bind(
           child_process, 'go', ['get', p], {env: that.testEnv}));
     });
-    tasks.push(
-      child_process.execFile.bind(child_process, 'go', ['install'], {
-        cwd: installDir,
-        env: that.testEnv
-      })
-    );
+    var installTargets = [
+      this.testClientDir,
+      this.testServerDir
+    ];
+    _.forEach(installTargets, function(installDir) {
+      tasks.push(
+        child_process.execFile.bind(child_process, 'go', ['install'], {
+          cwd: installDir,
+          env: that.testEnv
+        })
+      );
+    });
     async.series(tasks, done);
   };
 
@@ -290,23 +296,17 @@ GoAgent.prototype.runInteropTest =
  */
 var main = function main() {
   var agent = new GoAgent();
-  var setupTargets = {
-      client: agent.testClientDir,
-      server: agent.testServerDir
-  };
-  _.forEach(setupTargets, function(targetDir, name) {
-    console.log('Agent %s directory is %s', name, targetDir);
-    agent._setupAndInstall(
-      targetDir,
-      function(err) {
-        if (err) {
-          console.log('Setup in %s failed: %s', targetDir, err);
-        } else {
-          console.log('Setup in %s succeeded', targetDir);
-        }
+  agent._setupAndInstall(
+    function(err) {
+      if (err) {
+        console.log('Setup failed: %s', err);
+      } else {
+        console.log(
+          'Go agent: grpc-go installed for interop tests in: %s',
+          agent.testDir);
       }
-    );
-  });
+    }
+  );
 };
 
 if (require.main === module) {

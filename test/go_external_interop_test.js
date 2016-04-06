@@ -178,14 +178,14 @@ function makeGoServer(opts, done) {
     _.merge(agentOpts, addr, opts);
     agent = new GoAgent(agentOpts);
     var insecure = !!opts.plain;
-    var startAgentServer =  function(err) {
+    var startAgentServer = function(err) {
       if (err) {
         done(err);
         return;
       }
       agent.startServer(!insecure, done);
     };
-    agent._setupAndInstall(agent.testServerDir, startAgentServer);
+    agent._setupAndInstall(startAgentServer);
   };
   nextAvailablePort(createAgent);
 }

@@ -29,7 +29,8 @@
   },
   "scripts": {
     "doc": "jsdoc -c jsdoc.json",
-    "interop_test": "istanbul test _mocha -- --reporter spec -g 'External Interop'",
+    "interop-test": "istanbul test _mocha -- --reporter spec -g 'External Interop'",
+    "install-go-interop": "./interop/go_interop_agent.js",
     "lint": "jshint lib test interop example",
     "prepare": "npm test && npm run lint && npm version patch",
     "test": "istanbul test _mocha -- --reporter spec -i -g 'External Interop' --slow 1000 --timeout 5000"
