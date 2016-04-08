@@ -208,6 +208,6 @@ npm run interop-test
 _Note_ The node interop test client is tested against the node interop test server as part of the [unit tests](#unit_tests).   `interop-test` here actual runs against [grpc-go][].
 
 - the test is skipped unless Go is installed.
-- when Go is available, test test installs [grpc-go][] to a temporary location and runs the interop the client against the grpc-go server and vice versa.
+- when Go is available, the test installs [grpc-go][] to a temporary location and runs the interop client against the grpc-go server and vice versa.
 
 [grpc-go]:https://github.com/grpc/grpc-go
