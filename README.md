@@ -1,26 +1,60 @@
-# Nurpc - gRPC for Node.js in javascript
+# Dorusu-js - gRPC for Node.js in javascript
 
-This is not an official Google project.
+This is **not** an official Google project.
 
 The official Google-maintained implementation of gRPC for node.js is available
-at [grpc-nodejs](https://github.com/grpc/grpc/tree/master/src/node).
+at [grpc-nodejs][].
 
 This is an alternate implementation written in javascript by a Googler. It
 
-- interoperates successfully with any official gRPC implementations, i.e it
-  implements the
-  [gRPC spec](https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md)
-  and passes all the core
-  [gRPC interop tests](https://github.com/grpc/grpc/blob/master/doc/interop-test-descriptions.md)
+- interoperates successfully with the official gRPC implementations, i.e it
+  implements the [gRPC spec][] and passes all the core [gRPC interop tests][]
 
-- deliberately has an [incompatible API surface](#design_summary), i.e, do not
-  expect code written using this library to be a drop-in replacement for code
-  written using the official library
+- has an incompatible API surface to [grpc-nodejs][], for reasons explained
+  in the [DESIGN SUMMARY](#design_summary).
+  - This issue [TBD-when-on-github]() is a documentation issue tracking the differences.
+  - **N.B.** That means this library cannot be used as a drop-in replacement for code
+  written using the official library. Another issue will raised be track this;
+  an if it has an impact on users, discuss approaches for resolving it.
 
+[grpc-nodejs]:https://github.com/grpc/grpc/tree/master/src/node
+[gRPC spec]:https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md
+[grpc interop tests]:https://github.com/grpc/grpc/blob/master/doc/interop-test-descriptions.md
 
-### EXAMPLES
+## DESIGN SUMMARY
 
-Given the greeter protobuf IDL: helloworld.proto
+dorusu-js provides strongly-idiomatic client and server implementations
+supporting the gRPC rpc protocol.
+
+The main governing power behind the dorusu API design is that it provides
+elements similar to the existing node.js [HTTP2 API][], node-http2], (which
+is in turn very similar to the node [HTTP API][]/[HTTPS API][]).
+
+In part, the similarity comes from re-use via extension of classes defined in
+[node-http2][].  In other cases the classes have been extended to
+enforce additional restrictions the [RPC Protocol][] places on the use
+[HTTP2][].
+
+The goal of the design is that
+- the client rpc api surface has a strong similarity to the builtin node.js https library surface
+- the server rpc api surface has a strong similarity to the [Express API][]
+
+The result should be an rpc client and server with an intuitive surface that is
+easy to learn due to its similarity to existing node.js code.  I.e, most of the
+API should already be familiar to developers, and important new rpc features like
+streaming requests and response are available as minor deltas that are easily
+understood.
+
+[HTTP2 API]:https://github.com/molnarg/node-http
+[HTTPS API]:http://nodejs.org/api/https.html
+[HTTP API]:http://nodejs.org/api/http.html
+[RPC protocol]: https://github.com/grpc/grpc-common/blob/master/PROTOCOL-HTTP2.md
+[HTTP2]:http://tools.ietf.org/html/draft-ietf-httpbis-http2-16#section-8.1.2.4
+[Express API]:http://expressjs.com/4x/api.html
+
+## EXAMPLES
+
+### Given the greeter protobuf IDL: helloworld.proto
 
 ```protobuf
 
@@ -48,7 +82,7 @@ message HelloReply {
 
 ```
 
-Serve greetings with a server: helloworld_server.js
+### Serve greetings with a server: helloworld_server.js
 
 ```javascript
 
@@ -92,7 +126,7 @@ main();
 
 ```
 
-Access greetings with a client: helloworld_client.js
+### Access greetings with a client: helloworld_client.js
 
 ```javascript
 var buildClient = require('dorusu/client').buildClient;
@@ -120,97 +154,57 @@ function main() {
 main();
 ```
 
-Try it out
+### Try it out
 
-```shell
+```bash
 node helloworld_server.js &
 node helloworld_client.js
 node helloworld_client.js dorusu
-
 ```
 
+### Other examples
+You can also try out the large math_server and math_client examples in this repo
 
-You can also try out the large examples math_server and math_client
-```shell
-# (from this directory)
+```bash
+npm update  # install dorusu locally
 example/math_server.js &
 
 # (same directory, another terminal window)
 example/math_client.js
-
 ```
-
-### PREREQUISITES
-- `node`: This requires `node` to be installed.
-- You can install `node` quickly and conveniently using [nvm][], which also allows easy testing on multiple node versions.
-
-### INSTALLATION
-- At the moment the package is unpublished so it needs to be installed from source.
-```shell
-# (from this directory)
-npm update
-
-```
-
 
 Try it out with much nicer log output by installing [bunyan][]
-```shell
+```bash
 npm install -g bunyan # installs bunyan, may require sudo depending on how node is set up
+
 # (from this directory)
 HTTP2_LOG=info example/math_server.js | bunyan -o short &
-# (same directory, another terminal window)
+
+# (same directory, another terminal)
 example/math_client.js
 HTTP2_LOG=info example/math_client.js | bunyan -o short
 ```
 
-### TESTING
-To run the test suite, simply run `npm test` in the install location.
+[nvm]: https://github.com/creationix/nvm
+[bunyan]:http://trentm.com/talk-bunyan-in-prod/#/
+[node-http2]::https://github.com/molnarg/node-http
 
-You can also run the interop test client/server:
-```shell
-# (from this directory)
-# Install bunyan to give readable logs
-[sudo] npm install -g bunyan # installs bunyan, gives good interop output
+## TESTING
 
-# Run against the production test server
-HTTP2_LOG=info interop/interop_client.js \
---server_host grpc-test.sandbox.google.com \
---server_port 443 \
---secure \
---test_case all | bunyan -o short
-
-# Run against a node interop test server
-HTTP2_LOG=info interop/interop_server.js -p 50443 | bunyan -o short # (in one terminal)
-HTTP2_LOG=info interop/interop_client.js \
---server_host localhost \
---server_port 50443 \
---secure \
---test_case all | bunyan -o short  # in another terminal
-
+### unit tests
+```bash
+npm test
 ```
 
-### DESIGN SUMMARY
+### interop tests
+```bash
+npm run interop-test
+```
+_Note_ The node interop test client is tested against the node interop test server as part of the [unit tests](#unit_tests).   `interop-test` here actual runs against [grpc-go][].
+
+- the test is skipped unless Go is installed.
+- when Go is available, test test installs [grpc-go][] to a temporary location and runs the interop test client against the grpc-go server and vice versa.
+
+[grpc-go]:https://github.com/grpc/grpc-go
 
 
-dorusu aims to provide strongly-idiomatic client and server implementations supporting the gRPC protocol.
-
-The main governing power behind the dorusu API design is that it provides elements similar to the existing node.js [HTTP2 API][], node-http2, (which is in turn very similar to the node [HTTP API]/[HTTPS API]).
-
-In part, the similarity comes from re-use via extension of classes defined in node-http2.  In other cases the classes have been copied and modified to enforce additional restrictions the [RPC Protocol][] places on the use [HTTP2][].
-
-The goal of the design is that
-- the client rpc api surface has a strong similarity to how client code in node.js applications looks.
-- the server rpc api surface has a strong similarity to the [Express API][]
-
-The result should be an rpc client and server with an intuitive surface that is easily adopted through its similarity with existing node.js code.
-I.e, most of the API will already be familiar to developers, and important new rpc features like streaming requests and response appear as minor deltas that are easily understood.
-
-[HTTP2 API]:https://github.com/molnarg/node-http
-[HTTPS API]:http://nodejs.org/api/https.html
-[HTTP API]:http://nodejs.org/api/http.html
-[RPC protocol]: https://github.com/grpc/grpc-common/blob/master/PROTOCOL-HTTP2.md
-[HTTP2]:http://tools.ietf.org/html/draft-ietf-httpbis-http2-16#section-8.1.2.4
-[Express API]:http://expressjs.com/4x/api.html
-[nvm]: https://github.com/creationix/nvm
-[nodejs-legacy]:https://packages.debian.org/sid/nodejs-legacy
-[bunyan]:http://trentm.com/talk-bunyan-in-prod/#/
