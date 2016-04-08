@@ -661,7 +661,7 @@ var parseArgs = function parseArgs() {
   var parser = new ArgumentParser({
     version: require('../package').version,
     addHelp:true,
-    description: 'NuRPC Node.js Interoperability Client.\n' +
+    description: 'Dorusu Node.js Interoperability Client.\n' +
                  'It accesses an RPC Interoperability Server and performs' +
                  ' test RPCs that demonstrate conformance with the rpc' +
                  ' protocol specification.'

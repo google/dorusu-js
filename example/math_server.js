@@ -150,7 +150,7 @@ var parseArgs = function parseArgs() {
   var parser = new ArgumentParser({
     version: require('../package').version,
     addHelp:true,
-    description: 'NuRPC Node.js Math Server example.\n' +
+    description: 'Dorusu Node.js Math Server example.\n' +
                  'Runs an example Math Server and handles sample' +
                  ' RPCs.'
   });

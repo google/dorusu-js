@@ -118,7 +118,7 @@ function GoAgent(opts) {
   this._log = opts.log;
   this.otherServerPids = [];
   this.serverPid = null;
-  this.testRoot = opts.testRoot || process.env.NURPC_TEST_ROOT ||
+  this.testRoot = opts.testRoot || process.env.DORUSU_TEST_ROOT ||
       DEFAULT_TEST_ROOT;
   this.forceRun = false;
 

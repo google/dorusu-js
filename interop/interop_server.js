@@ -198,7 +198,7 @@ var parseArgs = function parseArgs() {
   var parser = new ArgumentParser({
     version: require('../package').version,
     addHelp:true,
-    description: 'NuRPC Node.js Interopability Test Server.\n' +
+    description: 'Dorusu Node.js Interopability Test Server.\n' +
                  'Runs the Interoperability test server used to validate' +
                  ' RPCs implementations'
   });
