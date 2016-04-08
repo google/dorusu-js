@@ -178,6 +178,7 @@ example/math_client.js
 ```
 
 Try it out with much nicer log output by installing [bunyan][]
+
 ```bash
 npm install -g bunyan # installs bunyan, may require sudo depending on how node is set up
 
