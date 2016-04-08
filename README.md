@@ -13,13 +13,13 @@ This is an alternate implementation written in javascript by a Googler. It
 - has an incompatible API surface to [grpc-nodejs][], for reasons explained
   in the [DESIGN SUMMARY](#design_summary).
 
-  - **TODO** Add a documentation issue [TBD-when-on-github]() will be added to
-    github that explains the differences via code snippets.
+  - **TODO on github** Add a documentation issue that explains the differences
+    via code snippets embedded in the issue.
 
-  - **TODO** For now, this means this library cannot be used as a drop-in
-  replacement for code written using the [grpc-nodejs][]. Once the project is on
-  github, add a tracking issue to triage any impact this has on users, and
-  discuss various approaches for resolving it.
+  - **TODO on github** This means this library cannot be used as a drop-in
+  replacement for code written using [grpc-nodejs][].  Add a tracking issue to
+  triage any impact this has on users, and to discuss various approaches and to
+  be the focus for resolving these issues.
 
 [grpc-nodejs]:https://github.com/grpc/grpc/tree/master/src/node
 [gRPC spec]:https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md
@@ -31,10 +31,10 @@ dorusu-js provides strongly-idiomatic client and server implementations
 supporting the gRPC rpc protocol.
 
 The main governing power behind the dorusu API design is that it provides
-elements similar to the existing node.js [HTTP2 API][], node-http2], (which
-is in turn very similar to the node [HTTP API][]/[HTTPS API][]).
+elements similar to the existing node.js [HTTP2 API][], node-http2, which
+is in turn very similar to the node [HTTP API][]/[HTTPS API][].
 
-In part, the similarity comes from re-use via extension of classes defined in
+In part, the similarity comes from direct use of classes defined in
 [node-http2][].  In other cases the classes have been extended to
 enforce additional restrictions the [RPC Protocol][] places on the use
 [HTTP2][].
@@ -46,7 +46,7 @@ The goal of the design is that
 The result should be an rpc client and server with an intuitive surface that is
 easy to learn due to its similarity to existing node.js code.  I.e, most of the
 API should already be familiar to developers, and important new rpc features like
-streaming requests and response are available as minor deltas that are easily
+streaming requests and responses are available as minor deltas that are easily
 understood.
 
 [HTTP2 API]:https://github.com/molnarg/node-http
@@ -208,6 +208,6 @@ npm run interop-test
 _Note_ The node interop test client is tested against the node interop test server as part of the [unit tests](#unit_tests).   `interop-test` here actual runs against [grpc-go][].
 
 - the test is skipped unless Go is installed.
-- when Go is available, test test installs [grpc-go][] to a temporary location and runs the interop test client against the grpc-go server and vice versa.
+- when Go is available, test test installs [grpc-go][] to a temporary location and runs the interop the client against the grpc-go server and vice versa.
 
 [grpc-go]:https://github.com/grpc/grpc-go
