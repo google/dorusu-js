@@ -12,10 +12,14 @@ This is an alternate implementation written in javascript by a Googler. It
 
 - has an incompatible API surface to [grpc-nodejs][], for reasons explained
   in the [DESIGN SUMMARY](#design_summary).
-  - This issue [TBD-when-on-github]() is a documentation issue tracking the differences.
-  - **N.B.** That means this library cannot be used as a drop-in replacement for code
-  written using the official library. Another issue will raised be track this;
-  an if it has an impact on users, discuss approaches for resolving it.
+
+  - **TODO** Add a documentation issue [TBD-when-on-github]() will be added to
+    github that explains the differences via code snippets.
+
+  - **TODO** For now, this means this library cannot be used as a drop-in
+  replacement for code written using the [grpc-nodejs][]. Once the project is on
+  github, add a tracking issue to triage any impact this has on users, and
+  discuss various approaches for resolving it.
 
 [grpc-nodejs]:https://github.com/grpc/grpc/tree/master/src/node
 [gRPC spec]:https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md
@@ -206,5 +210,3 @@ _Note_ The node interop test client is tested against the node interop test serv
 - when Go is available, test test installs [grpc-go][] to a temporary location and runs the interop test client against the grpc-go server and vice versa.
 
 [grpc-go]:https://github.com/grpc/grpc-go
-
-
