@@ -81,7 +81,8 @@ should implement
 - [compression](https://github.com/grpc/grpc/issues/4075)
 - enabling per-message compression (once compression is implemented)
 
-- **TODO on github** Open
+**TODO on github**
+Open
   - an issue tracking each missing feature
   - a meta-issue that makes the overall gap between dorusu-js and
     [grpc-nodejs][] visible
