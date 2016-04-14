@@ -3,7 +3,9 @@
 This is **not** an official Google project.
 
 The official Google-maintained implementation of gRPC for node.js is available
-at [grpc-nodejs][].
+at [grpc-nodejs][].  Note that Google only maintains *one* offical
+implementation of gRPC in any programming language - all the official support
+for nodejs is focused on [grpc-nodejs][].
 
 This is an alternate implementation written in javascript by a Googler. It
 
@@ -18,8 +20,8 @@ This is an alternate implementation written in javascript by a Googler. It
 
   - **TODO on github** This means this library cannot be used as a drop-in
   replacement for code written using [grpc-nodejs][].  Add a tracking issue to
-  triage any impact this has on users, and to discuss various approaches and to
-  be the focus for resolving these issues.
+  triage any impact this has on users, use it discuss various approaches for
+  resolving these issues.
 
 [grpc-nodejs]:https://github.com/grpc/grpc/tree/master/src/node
 [gRPC spec]:https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md
@@ -55,6 +57,36 @@ understood.
 [RPC protocol]: https://github.com/grpc/grpc-common/blob/master/PROTOCOL-HTTP2.md
 [HTTP2]:http://tools.ietf.org/html/draft-ietf-httpbis-http2-16#section-8.1.2.4
 [Express API]:http://expressjs.com/4x/api.html
+
+## Missing Features
+
+At this point in time, dorusu-js is missing features that [grpc-nodejs][]
+provides, e.g
+
+- automatic connection retrys with [exponential backoff][] in clients
+- cascading cancellation in servers
+- deadline propagation in servers
+- automated stress tests in the CI environment
+- automated perfomance tests in the CI environment
+- [error-code compliance][]
+- a [health-check service](https://github.com/grpc/grpc/pull/2322)
+
+[error-code compliance]:https://github.com/grpc/grpc/blob/master/doc/statuscodes.md
+[exponential backoff]:https://github.com/grpc/grpc/blob/master/doc/connection-backoff.md
+
+There are also other feature that are planned for [grpc-nodejs][] that dorusu-js
+should implement
+
+- [client-side load-balancing][]
+- [compression](https://github.com/grpc/grpc/issues/4075)
+- enabling per-message compression (once compression is implemented)
+
+- **TODO on github** Open
+  - an issue tracking each missing feature
+  - a meta-issue that makes the overall gap between dorusu-js and
+    [grpc-nodejs][] visible
+
+[client-side load-balancing]:https://github.com/grpc/grpc/blob/master/doc/load-balancing.md
 
 ## EXAMPLES
 
@@ -211,3 +243,10 @@ _Note_ The node interop test client is tested against the node interop test serv
 - when Go is available, the test installs [grpc-go][] to a temporary location and runs the interop client against the grpc-go server and vice versa.
 
 [grpc-go]:https://github.com/grpc/grpc-go
+
+## CONTRIBUTING/REPORTING ISSUES
+
+Contributions to this library are always welcome and highly encouraged.
+See the [CONTRIBUTING] documentation for more information on how to get started.
+
+[CONTRIBUTING]:https://github.com/google/dorusu-js/blob/master/CONTRIBUTING.md

@@ -61,8 +61,8 @@ accept your pull requests.
 Here are a few examples:
 
 ```
-* Obtains the instance email and key from gtoken ([@tbetbetbe][])
-* [#36](google/dorusu#1) Adds an implementation of IAM authorization ([@tbetbetbe][])
+* Adds an implemntation of compression ([@tbetbetbe][])
+* [#36](google/dorusu#1) Updates the README.md ([@tbetbetbe][])
 ```
 
 
@@ -76,7 +76,7 @@ can automate all this with a patch version bump (version += 0.0.1) by running:
 npm run prepare
 ```
 
-[1]: https://github.com/google/google-auth-nodejs-library/issues
+[1]: https://github.com/google/dorusu-js/issues
 [2]: http://gun.io/blog/how-to-github-fork-branch-and-pull-request
 [3]: http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html
 [4]: https://help.github.com/articles/using-pull-requests
