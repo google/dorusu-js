@@ -61,7 +61,7 @@ understood.
 ## Missing Features
 
 At this point in time, dorusu-js is missing features that [grpc-nodejs][]
-provides, e.g
+provides, e.g,
 
 - automatic connection retrys with [exponential backoff][] in clients
 - cascading cancellation in servers
@@ -74,8 +74,8 @@ provides, e.g
 [error-code compliance]:https://github.com/grpc/grpc/blob/master/doc/statuscodes.md
 [exponential backoff]:https://github.com/grpc/grpc/blob/master/doc/connection-backoff.md
 
-There are also other feature that are planned for [grpc-nodejs][] that dorusu-js
-should implement
+There are also other features that are planned for [grpc-nodejs][] that dorusu-js
+should implement:
 
 - [client-side load-balancing][]
 - [compression](https://github.com/grpc/grpc/issues/4075)
@@ -83,9 +83,9 @@ should implement
 
 **TODO on github**
 Open
-  - an issue tracking each missing feature
-  - a meta-issue that makes the overall gap between dorusu-js and
-    [grpc-nodejs][] visible
+- an issue tracking each missing feature
+- a meta-issue that makes the overall gap between dorusu-js and
+  [grpc-nodejs][] visible
 
 [client-side load-balancing]:https://github.com/grpc/grpc/blob/master/doc/load-balancing.md
 
