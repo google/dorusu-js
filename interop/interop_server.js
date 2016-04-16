@@ -67,8 +67,6 @@ var bunyan = require('bunyan');
 var http2 = require('http2');
 var insecureOptions = require('../test/util').insecureOptions;
 var dorusu = require('../lib');
-var path = require('path');
-var protobuf = dorusu.pb;
 
 var secureOptions = require('../example/certs').serverOptions;
 
@@ -174,7 +172,7 @@ function streamingOutputCall(request, response) {
  * @returns {app.RpcApp} providing the interop service implementation
  */
 var buildApp = exports.buildApp = function buildApp() {
-  var testpb = protobuf.loadProto(path.join(__dirname, 'test.proto'));
+  var testpb = dorusu.pb.requireProto('./test', require);
   var a = new app.RpcApp(testpb.grpc.testing.TestService.server);
   a.register('/grpc.testing.TestService/EmptyCall', emptyCall);
   a.register('/grpc.testing.TestService/UnaryCall', unaryCall);

@@ -42,7 +42,6 @@ var interopClient = require('../interop/interop_client');
 var listenOnFreePort = require('./util').listenOnFreePort;
 var nextAvailablePort = require('./util').nextAvailablePort;
 var dorusu = require('../lib');
-var path = require('path');
 
 var GoAgent = require('../interop/go_interop_agent').GoAgent;
 
@@ -54,14 +53,12 @@ var testClientOptions = {
 };
 testClientOptions.secure.rejectUnauthorized = false;
 
-var TEST_PROTO_PATH = path.join(__dirname, '../interop/test.proto');
-
 describe('External Interop Nodejs/Go', function() {
   /* Adjust the test timeout/duration; Go is spawned in a child proc */
   this.slow(5000);
   this.timeout(8000);
 
-  var testpb = dorusu.pb.loadProto(TEST_PROTO_PATH);
+  var testpb = dorusu.pb.requireProto('../interop/test');
   var Ctor = dorusu.buildClient(testpb.grpc.testing.TestService.client);
   var theClient, agent;
   _.forEach(testClientOptions, function(serverOpts, connType) {

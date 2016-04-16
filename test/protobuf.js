@@ -72,9 +72,9 @@ describe('`function loadProto(path, [format])`', function() {
     };
     expect(shouldThrow).to.throw(Error);
   });
-  it('should load service defined in the proto', function() {
-    var testProto = protobuf.loadProto(fixturePath('test_service.proto'));
-    _.forEach(['client', 'server'], function(side) {
+  _.forEach(['client', 'server'], function(side) {
+    it('should load a ' + side + ' defined in the proto file', function() {
+      var testProto = protobuf.loadProto(fixturePath('test_service.proto'));
       var got = testProto.TestService[side];
       expect(got).to.be.an.instanceof(app.Service);
       expect(got.name).to.eql('TestService');
@@ -82,15 +82,57 @@ describe('`function loadProto(path, [format])`', function() {
       expect(methods).to.eql(['Unary', 'ClientStream', 'ServerStream',
                               'BidiStream']);
     });
-  });
-  it('should load service defined in a proto with a package', function() {
-    var mathProto = protobuf.loadProto(examplePath('math.proto'));
-    _.forEach(['client', 'server'], function(side) {
+    it('should load a ' + side + ' defined with a package', function() {
+      var mathProto = protobuf.loadProto(examplePath('math.proto'));
       var got = mathProto.math.Math[side];
       expect(got).to.be.an.instanceof(app.Service);
       expect(got.name).to.eql('math.Math');
       var methods = _.map(got.methods, function(m) { return m.name; });
       expect(methods).to.eql(['Div', 'DivMany', 'Fib', 'Sum']);
+    });
+  });
+});
+
+describe('`function requireProto(path, [format])`', function() {
+  var absolutePath = fixturePath('test_service');
+  describe('when using an absolute path', function()  {
+    it('should require the proto file without an extension', function() {
+      var isOK = function isOK() {
+        protobuf.requireProto(absolutePath);
+      };
+      expect(isOK).to.not.throw(Error);
+    });
+    it('should require the proto file with an extension', function() {
+      var isOK = function isOK() {
+        protobuf.requireProto(absolutePath + '.proto');
+      };
+      expect(isOK).to.not.throw(Error);
+    });
+  });
+  var localPath = './fixtures/test_service';
+  describe('when using a relative path', function()  {
+    it('should require the proto file without an extension', function() {
+      var isOK = function isOK() {
+        protobuf.requireProto(localPath, require);
+      };
+      expect(isOK).to.not.throw(Error);
+    });
+    it('should require the proto file with an extension', function() {
+      var isOK = function isOK() {
+        protobuf.requireProto(localPath + '.proto', require);
+      };
+      expect(isOK).to.not.throw(Error);
+    });
+  });
+  _.forEach(['client', 'server'], function(side) {
+    it('should require ' + side + ' defined in the proto', function() {
+      var testProto = protobuf.requireProto(localPath, require);
+      var got = testProto.TestService[side];
+      expect(got).to.be.an.instanceof(app.Service);
+      expect(got.name).to.eql('TestService');
+      var methods = _.map(got.methods, function(m) { return m.name; });
+      expect(methods).to.eql(['Unary', 'ClientStream', 'ServerStream',
+                              'BidiStream']);
     });
   });
 });

@@ -68,7 +68,6 @@ chai.use(require('dirty-chai'));
 var expect = chai.expect;
 var http2 = require('http2');
 var insecureOptions = require('../test/util').insecureOptions;
-var path = require('path');
 var dorusu = require('../lib');
 var secureOptions = require('../example/certs').clientOptions;
 
@@ -759,7 +758,7 @@ var main = function main() {
       rejectUnauthorized: false
     });
   }
-  var testpb = dorusu.pb.loadProto(path.join(__dirname, 'test.proto'));
+  var testpb = dorusu.pb.requireProto('./test', require);
   var Ctor = dorusu.buildClient(testpb.grpc.testing.TestService.client);
 
   if (_.has(exports.withoutAuthTests, args.test_case)) {

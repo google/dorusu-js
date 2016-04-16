@@ -65,7 +65,6 @@ var bunyan = require('bunyan');
 var expect = require('chai').expect;
 var http2 = require('http2');
 var insecureOptions = require('../test/util').insecureOptions;
-var path = require('path');
 var dorusu = require('../lib');
 var secureOptions = require('../test/util').secureClientOptions;
 
@@ -240,7 +239,7 @@ var main = function main() {
   } else {
     _.merge(opts, insecureOptions);
   }
-  var mathpb = dorusu.pb.loadProto(path.join(__dirname, 'math.proto'));
+  var mathpb = dorusu.pb.requireProto('./math', require);
   var Ctor = dorusu.buildClient(mathpb.math.Math.client);
   var client = new Ctor(opts);
   async.series([
