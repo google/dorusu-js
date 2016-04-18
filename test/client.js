@@ -34,7 +34,6 @@
 
 var _ = require('lodash');
 var app = require('../lib/app');
-var buildClient = require('../lib/client').buildClient;
 var chai = require('chai');
 chai.use(require('dirty-chai'));
 var clientLog = require('./util').clientLog;
@@ -78,9 +77,9 @@ describe('Service Client', function() {
     app.Method('do_irreverse', null, reverser)
   ]);
   _.forEach(testOptions, function(serverOpts, connType) {
-    describe(connType + ': function `buildClient(service)`', function() {
+    describe(connType + ': function `app.buildClient(service)`', function() {
       it('should build a constructor that adds the expected methods', function() {
-        var Ctor = buildClient(testService);
+        var Ctor = app.buildClient(testService);
         expect(Ctor).to.be.a('function');
         var instance = new Ctor('http://localhost:8080/dummy/path');
         expect(instance.doEcho).to.be.a('function');
@@ -136,7 +135,7 @@ describe('Service Client', function() {
             decodeMessage(data, null, validateReqThenRespond);
           });
         };
-        var testClient = buildClient(testService);
+        var testClient = app.buildClient(testService);
         checkServiceClientAndServer(testClient, thisTest, thisServer, serverOpts);
       });
     });

@@ -46,7 +46,7 @@ var secureOptions = require('../example/certs').options;
 http2.globalAgent = new http2.Agent({ log: clientLog });
 
 var mathpb = dorusu.pb.requireProto('../example/math');
-var mathClientCls = dorusu.buildClient(mathpb.math.Math.client);
+var MathClient = mathpb.math.Math.Client;
 var testOptions = {
   secure: secureOptions,
   insecure: insecureOptions
@@ -63,7 +63,11 @@ describe('Math Client', function() {
         listenOnFreePort(server, function(addr) {
           serverAddr = addr;
           _.merge(stubOpts, serverAddr, serverOpts);
-          client = new mathClientCls(stubOpts);
+          if (connType === 'secure') {
+            client = new MathClient(stubOpts);
+          } else {
+            client = new MathClient.raw(stubOpts);
+          }
           done();
         });
       });

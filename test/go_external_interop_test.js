@@ -59,7 +59,7 @@ describe('External Interop Nodejs/Go', function() {
   this.timeout(8000);
 
   var testpb = dorusu.pb.requireProto('../interop/test');
-  var Ctor = dorusu.buildClient(testpb.grpc.testing.TestService.client);
+  var TestServiceClient = testpb.grpc.testing.TestService.Client;
   var theClient, agent;
   _.forEach(testClientOptions, function(serverOpts, connType) {
     describe(connType, function() {
@@ -78,7 +78,11 @@ describe('External Interop Nodejs/Go', function() {
             family: 'IPv4'
           };
           _.merge(stubOpts, serverAddr, serverOpts);
-          theClient = new Ctor(stubOpts);
+          if (connType === 'secure') {
+            theClient = new TestServiceClient(stubOpts);
+          } else {
+            theClient = new TestServiceClient.raw(stubOpts);
+          }
           done();
         };
         makeGoServer(serverOpts, setUpClient);

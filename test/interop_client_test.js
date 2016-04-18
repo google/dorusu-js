@@ -55,7 +55,7 @@ var testOptions = {
 describe('Interop Client', function() {
   var testpb = dorusu.pb.requireProto('../interop/test');
 
-  var Ctor = dorusu.buildClient(testpb.grpc.testing.TestService.client);
+  var TestServiceClient = testpb.grpc.testing.TestService.Client;
   var theClient, server, serverAddr;
   _.forEach(testOptions, function(serverOpts, connType) {
     describe(connType, function() {
@@ -66,7 +66,11 @@ describe('Interop Client', function() {
         listenOnFreePort(server, function(addr) {
           serverAddr = addr;
           _.merge(stubOpts, serverAddr, serverOpts);
-          theClient = new Ctor(stubOpts);
+          if (connType === 'secure') {
+            theClient = new TestServiceClient(stubOpts);
+          } else {
+            theClient = new TestServiceClient.raw(stubOpts);
+          }
           done();
         });
       });

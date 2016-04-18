@@ -126,7 +126,6 @@ message HelloReply {
 
 ```javascript
 
-var app = require('dorusu/app');
 var protobuf = require('dorusu/protobuf');
 var server = require('dorusu/server');
 
@@ -150,8 +149,8 @@ function sayHello(request, response) {
  * sample server port
  */
 function main() {
-  var hellopb = protobuf.requireProto('helloworld');
-  var app = new app.RpcApp(hellopb.ex.grpc.Greeter.server);
+  var hellopb = protobuf.requireProto('./helloworld', require);
+  var app = hellopb.ex.grpc.Greeter.serverApp;
   app.register('/ex.grpc/SayHello', sayHello);
 
   /* server.raw.CreateServer is insecure, server.createServer is alway secure */
@@ -169,15 +168,14 @@ main();
 ### Access greetings with a client: helloworld_client.js
 
 ```javascript
-var buildClient = require('dorusu/client').buildClient;
 var protobuf = require('dorusu/protobuf');
 
 function main() {
-  var hellopb = protobuf.requireProto('helloworld');
-  var Ctor = buildClient(hellopb.ex.grpc.Greeter.client);
-  var client = new Ctor({
+  var hellopb = protobuf.requireProto('./helloworld', require);
+  /* <package>.Client.raw is insecure, <package>.Client is alway secure */
+  var GreeterClient = hellopb.ex.grpc.Greeter.Client.raw;
+  var client = new GreeterClient({
     host: 'localhost',
-    plain: true,  /* connections are secure by default */
     port: 50051,
     protocol: 'http:'
   });
