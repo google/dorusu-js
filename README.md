@@ -1,5 +1,13 @@
 # Dorusu-js - gRPC for Node.js in javascript
 
+[![Build Status][travisimg]][travis]
+[![Code Coverage][codecovimg]][codecov]
+
+[travis]: https://travis-ci.org/google/dorusu-js
+[travisimg]: https://api.travis-ci.org/google/dorusu-js.svg
+[codecov]: https://codecov.io/gh/google/dorusu-js
+[codecovimg]: https://img.shields.io/codecov/c/github/google/dorusu-js.svg
+
 This is **not** an official Google project.
 
 The official Google-maintained implementation of gRPC for node.js is available
@@ -15,13 +23,12 @@ This is an alternate implementation written in javascript by a Googler. It
 - has an incompatible API surface to [grpc-nodejs][], for reasons explained
   in the [DESIGN SUMMARY](#design_summary).
 
-  - **TODO on github** Add a documentation issue that explains the differences
-    via code snippets embedded in the issue.
+  - There is a [meta issue](https://github.com/google/dorusu-js/issues/1) that
+    triages other issues that *will* explain the differences via code snippets.
 
-  - **TODO on github** This means this library cannot be used as a drop-in
-  replacement for code written using [grpc-nodejs][].  Add a tracking issue to
-  triage any impact this has on users, use it discuss various approaches for
-  resolving these issues.
+  - This [meta issue](https://github.com/google/dorusu-js/issues/1) will also be
+    used to triage the impact that not being able use dorusu-js as a drop-in
+    replacement for [grpc-nodejs][] has on users.
 
 [grpc-nodejs]:https://github.com/grpc/grpc/tree/master/src/node
 [gRPC spec]:https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md
@@ -81,15 +88,9 @@ should implement:
 - [compression](https://github.com/grpc/grpc/issues/4075)
 - enabling per-message compression (once compression is implemented)
 
-**TODO on github**
-
-Open
-
-- an issue tracking each missing feature
-- a meta-issue that makes the overall gap between dorusu-js and
-  [grpc-nodejs][] visible
-
 [client-side load-balancing]:https://github.com/grpc/grpc/blob/master/doc/load-balancing.md
+
+These missing features are tracked with [issues](https://github.com/google/dorusu-js/issues?q=is%3Aissue+is%3Aopen+label%3A%22implementation+gap%22) and triaged via single meta [tracking issue](https://github.com/google/dorusu-js/issues/2)
 
 ## EXAMPLES
 
