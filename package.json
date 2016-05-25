@@ -4,8 +4,13 @@
   "description": "An implementation of gRPC in Javascript",
   "main": "lib/index.js",
   "devDependencies": {
+    "bunyan": "~1.5",
+    "chai": "~3.0",
+    "codecov": "~1.0",
+    "dirty-chai": "~1.2",
     "istanbul": "~0.3",
     "jsdoc": "~3.3",
+    "jshint": "~2.5",
     "mocha": "~2.2"
   },
   "repository": {
@@ -21,14 +26,10 @@
   "dependencies": {
     "argparse": "~1.0",
     "async": "~1.2",
-    "bunyan": "~1.5",
-    "chai": "~3.0",
     "concat-stream": "~1.4",
-    "dirty-chai": "~1.2",
     "fs-extra": "~0.18",
     "google-auth-library": "~0.9",
-    "http2": "tbetbetbe/node-http2#rpc-impl-all-changes",
-    "jshint": "~2.5",
+    "http2": "~3.3.4",
     "lodash": "~3.9",
     "protobufjs": "~5.0"
   },
@@ -36,11 +37,13 @@
     "node": ">= 4.0.0"
   },
   "scripts": {
+    "codecov": "istanbul cover _mocha -- --reporter spec -i -g 'External Interop' --slow 1000 --timeout 5000 && codecov",
     "doc": "jsdoc -c jsdoc.json",
     "interop-test": "istanbul test _mocha -- --reporter spec -g 'External Interop'",
     "install-go-interop": "./interop/go_interop_agent.js",
     "lint": "jshint lib test interop example",
-    "prepare": "npm test && npm run lint && npm version patch",
+    "preversion": "npm test && npm run lint",
+    "postversion": "git push origin && git push origin --tags",
     "test": "istanbul test _mocha -- --reporter spec -i -g 'External Interop' --slow 1000 --timeout 5000"
   },
   "author": "Timothy Emiola",
