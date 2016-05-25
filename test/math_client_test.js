@@ -41,12 +41,11 @@ var insecureOptions = require('./util').insecureOptions;
 var listenOnFreePort = require('./util').listenOnFreePort;
 var mathClient = require('../example/math_client');
 var dorusu = require('../lib');
-var path = require('path');
 var secureOptions = require('../example/certs').options;
 
 http2.globalAgent = new http2.Agent({ log: clientLog });
 
-var mathpb = dorusu.pb.loadProto(path.join(__dirname, '../example/math.proto'));
+var mathpb = dorusu.pb.requireProto('../example/math');
 var mathClientCls = dorusu.buildClient(mathpb.math.Math.client);
 var testOptions = {
   secure: secureOptions,

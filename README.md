@@ -150,7 +150,7 @@ function sayHello(request, response) {
  * sample server port
  */
 function main() {
-  var hellopb = protobuf.loadProto(path.join(__dirname, 'helloworld.proto'));
+  var hellopb = protobuf.requireProto('helloworld');
   var app = new app.RpcApp(hellopb.ex.grpc.Greeter.server);
   app.register('/ex.grpc/SayHello', sayHello);
 
@@ -173,7 +173,7 @@ var buildClient = require('dorusu/client').buildClient;
 var protobuf = require('dorusu/protobuf');
 
 function main() {
-  var hellopb = protobuf.loadProto(path.join(__dirname, 'helloworld.proto'));
+  var hellopb = protobuf.requireProto('helloworld');
   var Ctor = buildClient(hellopb.ex.grpc.Greeter.client);
   var client = new Ctor({
     host: 'localhost',

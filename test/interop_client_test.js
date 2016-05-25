@@ -41,7 +41,6 @@ var insecureOptions = require('./util').insecureOptions;
 var interopClient = require('../interop/interop_client');
 var listenOnFreePort = require('./util').listenOnFreePort;
 var dorusu = require('../lib');
-var path = require('path');
 var secureOptions = require('../example/certs').options;
 
 http2.globalAgent = new http2.Agent({ log: clientLog });
@@ -54,7 +53,8 @@ var testOptions = {
 };
 
 describe('Interop Client', function() {
-  var testpb = dorusu.pb.loadProto(path.join(__dirname, '../interop/test.proto'));
+  var testpb = dorusu.pb.requireProto('../interop/test');
+
   var Ctor = dorusu.buildClient(testpb.grpc.testing.TestService.client);
   var theClient, server, serverAddr;
   _.forEach(testOptions, function(serverOpts, connType) {
