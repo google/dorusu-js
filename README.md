@@ -150,8 +150,8 @@ function sayHello(request, response) {
  */
 function main() {
   var hellopb = protobuf.requireProto('./helloworld', require);
-  var app = hellopb.ex.grpc.Greeter.serverApp;
-  app.register('/ex.grpc/SayHello', sayHello);
+  var app = hellopb.helloworld.Greeter.serverApp;
+  app.register('/helloworld/SayHello', sayHello);
 
   /* server.raw.CreateServer is insecure, server.createServer is alway secure */
   s = server.raw.createServer({
@@ -173,7 +173,7 @@ var protobuf = require('dorusu/protobuf');
 function main() {
   var hellopb = protobuf.requireProto('./helloworld', require);
   /* <package>.Client.raw is insecure, <package>.Client is alway secure */
-  var GreeterClient = hellopb.ex.grpc.Greeter.Client.raw;
+  var GreeterClient = hellopb.helloworld.Greeter.Client.raw;
   var client = new GreeterClient({
     host: 'localhost',
     port: 50051,
