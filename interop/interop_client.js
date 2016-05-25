@@ -759,17 +759,18 @@ var main = function main() {
     });
   }
   var testpb = dorusu.pb.requireProto('./test', require);
-  var Ctor = dorusu.buildClient(testpb.grpc.testing.TestService.client);
+  var TestServiceClient = testpb.grpc.testing.TestService.Client;
 
   if (_.has(exports.withoutAuthTests, args.test_case)) {
-    var client = new Ctor(opts);
+    var client = new TestServiceClient(opts);
     async.series([
       exports.withoutAuthTests[args.test_case].bind(null, client),
       process.exit.bind(null, 0)  /* TODO enable client's to be closed */
     ]);
   } else if (_.has(exports.withAuthTests, args.test_case)) {
     async.series([
-      exports.withAuthTests[args.test_case].bind(null, Ctor, opts, args),
+      exports.withAuthTests[args.test_case].bind(
+        null, TestServiceClient, opts, args),
       process.exit.bind(null, 0)  /* TODO enable client's to be closed */
     ]);
   }

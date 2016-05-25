@@ -59,7 +59,6 @@
  */
 
 var _ = require('lodash');
-var app = require('../lib/app');
 var bunyan = require('bunyan');
 var http2 = require('http2');
 var insecureOptions = require('../test/util').insecureOptions;
@@ -182,8 +181,8 @@ var parseArgs = function parseArgs() {
  * @returns {app.RpcApp} providing the math service implementation
  */
 var buildApp = exports.buildApp = function buildApp() {
-  var mathpb = dorusu.pb.requireProto('./math', require);
-  var a = new app.RpcApp(mathpb.math.Math.server);
+  var mathSvc = dorusu.pb.requireProto('./math', require).math.Math;
+  var a = mathSvc.serverApp;
   a.register('/math.Math/DivMany', mathDiv);
   a.register('/math.Math/Div', mathDiv);
   a.register('/math.Math/Fib', mathFib);

@@ -62,7 +62,6 @@
  */
 
 var _ = require('lodash');
-var app = require('../lib/app');
 var bunyan = require('bunyan');
 var http2 = require('http2');
 var insecureOptions = require('../test/util').insecureOptions;
@@ -172,8 +171,8 @@ function streamingOutputCall(request, response) {
  * @returns {app.RpcApp} providing the interop service implementation
  */
 var buildApp = exports.buildApp = function buildApp() {
-  var testpb = dorusu.pb.requireProto('./test', require);
-  var a = new app.RpcApp(testpb.grpc.testing.TestService.server);
+  var svc = dorusu.pb.requireProto('./test', require).grpc.testing.TestService;
+  var a = svc.serverApp;
   a.register('/grpc.testing.TestService/EmptyCall', emptyCall);
   a.register('/grpc.testing.TestService/UnaryCall', unaryCall);
   a.register('/grpc.testing.TestService/StreamingInputCall',

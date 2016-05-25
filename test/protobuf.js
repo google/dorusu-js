@@ -72,37 +72,69 @@ describe('`function loadProto(path, [format])`', function() {
     };
     expect(shouldThrow).to.throw(Error);
   });
-  _.forEach(['client', 'server'], function(side) {
-    it('should load a ' + side + ' defined in the proto file', function() {
-      var testProto = protobuf.loadProto(fixturePath('test_service.proto'));
-      var got = testProto.TestService[side];
-      expect(got).to.be.an.instanceof(app.Service);
-      expect(got.name).to.eql('TestService');
-      var methods = _.map(got.methods, function(m) { return m.name; });
-      expect(methods).to.eql(['Unary', 'ClientStream', 'ServerStream',
-                              'BidiStream']);
-    });
-    it('should load a ' + side + ' defined with a package', function() {
-      var mathProto = protobuf.loadProto(examplePath('math.proto'));
-      var got = mathProto.math.Math[side];
-      expect(got).to.be.an.instanceof(app.Service);
-      expect(got.name).to.eql('math.Math');
-      var methods = _.map(got.methods, function(m) { return m.name; });
-      expect(methods).to.eql(['Div', 'DivMany', 'Fib', 'Sum']);
-    });
+  it('should load a client defined in the proto file', function() {
+    var testProto = protobuf.loadProto(fixturePath('test_service.proto'));
+    var got = testProto.TestService.Client;
+    expect(got).to.be.a('function');
+    expect(got.name).to.eql('Client');
+    expect(_.keys(got.prototype)).to.eql([
+      'unary',
+      'clientStream',
+      'serverStream',
+      'bidiStream']);
+  });
+  it('should load a client defined with a package', function() {
+    var mathProto = protobuf.loadProto(examplePath('math.proto'));
+    var got = mathProto.math.Math.Client;
+    expect(got).to.be.a('function');
+    expect(got.name).to.eql('Client');
+    expect(_.keys(got.prototype)).to.eql(['div', 'divMany', 'fib', 'sum']);
+  });
+  it('should load a client that has a raw version', function() {
+    var mathProto = protobuf.loadProto(examplePath('math.proto'));
+    var got = mathProto.math.Math.Client;
+    expect(got.raw).to.be.a('function');
+    expect(got.raw.name).to.eql('RawClient');
+    expect(_.keysIn(got.raw.prototype)).to.eql([
+      'div',
+      'divMany',
+      'fib',
+      'sum']);
+  });
+  it('should load a server defined in the proto file', function() {
+    var testProto = protobuf.loadProto(fixturePath('test_service.proto'));
+    var got = testProto.TestService.serverApp;
+    expect(got).to.be.an.instanceof(app.RpcApp);
+    expect(got.missingRoutes()).to.eql([
+      '/TestService/Unary',
+      '/TestService/ClientStream',
+      '/TestService/ServerStream',
+      '/TestService/BidiStream'
+    ]);
+  });
+  it('should load a server defined with a package', function() {
+    var mathProto = protobuf.loadProto(examplePath('math.proto'));
+    var got = mathProto.math.Math.serverApp;
+    expect(got).to.be.an.instanceof(app.RpcApp);
+    expect(got.missingRoutes()).to.eql([
+      '/math.Math/Div',
+      '/math.Math/DivMany',
+      '/math.Math/Fib',
+      '/math.Math/Sum'
+    ]);
   });
 });
 
 describe('`function requireProto(path, [format])`', function() {
   var absolutePath = fixturePath('test_service');
   describe('when using an absolute path', function()  {
-    it('should require the proto file without an extension', function() {
+    it('should "require" a proto file without an extension', function() {
       var isOK = function isOK() {
         protobuf.requireProto(absolutePath);
       };
       expect(isOK).to.not.throw(Error);
     });
-    it('should require the proto file with an extension', function() {
+    it('should "require" a proto file with an extension', function() {
       var isOK = function isOK() {
         protobuf.requireProto(absolutePath + '.proto');
       };
@@ -111,28 +143,50 @@ describe('`function requireProto(path, [format])`', function() {
   });
   var localPath = './fixtures/test_service';
   describe('when using a relative path', function()  {
-    it('should require the proto file without an extension', function() {
+    it('should "require" a proto file without an extension', function() {
       var isOK = function isOK() {
         protobuf.requireProto(localPath, require);
       };
       expect(isOK).to.not.throw(Error);
     });
-    it('should require the proto file with an extension', function() {
+    it('should "require" a proto file with an extension', function() {
       var isOK = function isOK() {
         protobuf.requireProto(localPath + '.proto', require);
       };
       expect(isOK).to.not.throw(Error);
     });
   });
-  _.forEach(['client', 'server'], function(side) {
-    it('should require ' + side + ' defined in the proto', function() {
-      var testProto = protobuf.requireProto(localPath, require);
-      var got = testProto.TestService[side];
-      expect(got).to.be.an.instanceof(app.Service);
-      expect(got.name).to.eql('TestService');
-      var methods = _.map(got.methods, function(m) { return m.name; });
-      expect(methods).to.eql(['Unary', 'ClientStream', 'ServerStream',
-                              'BidiStream']);
-    });
+  it('should "require" a client defined in the proto', function() {
+    var testProto = protobuf.requireProto(localPath, require);
+    var got = testProto.TestService.Client;
+    expect(got).to.be.a('function');
+    expect(got.name).to.eql('Client');
+    expect(_.keys(got.prototype)).to.eql([
+      'unary',
+      'clientStream',
+      'serverStream',
+      'bidiStream']);
+  });
+  it('should "require" a client that has a raw version', function() {
+    var testProto = protobuf.requireProto(localPath, require);
+    var got = testProto.TestService.Client;
+    expect(got.raw).to.be.a('function');
+    expect(got.raw.name).to.eql('RawClient');
+    expect(_.keysIn(got.raw.prototype)).to.eql([
+      'unary',
+      'clientStream',
+      'serverStream',
+      'bidiStream']);
+  });
+  it('should "require" a server defined in the proto', function() {
+    var testProto = protobuf.requireProto(localPath, require);
+    var got = testProto.TestService.serverApp;
+    expect(got).to.be.an.instanceof(app.RpcApp);
+    expect(got.missingRoutes()).to.eql([
+      '/TestService/Unary',
+      '/TestService/ClientStream',
+      '/TestService/ServerStream',
+      '/TestService/BidiStream'
+    ]);
   });
 });

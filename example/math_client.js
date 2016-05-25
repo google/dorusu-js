@@ -240,8 +240,7 @@ var main = function main() {
     _.merge(opts, insecureOptions);
   }
   var mathpb = dorusu.pb.requireProto('./math', require);
-  var Ctor = dorusu.buildClient(mathpb.math.Math.client);
-  var client = new Ctor(opts);
+  var client = new mathpb.math.Math.Client(opts);
   async.series([
     doOkDiv.bind(null, client),
     doBadDiv.bind(null, client),
