@@ -43,6 +43,10 @@ var reverser = require('./util').reverser;
 var testSvc = app.Service('test', [
   app.Method('do_reverse', reverser, irreverser)
 ]);
+var dupMethodSvc = app.Service('dupMethod', [
+  app.Method('do_reverse', reverser, irreverser),
+  app.Method('do_reverse', reverser, irreverser)
+]);
 var basicSvc = app.Service('basic', [
   app.Method('noop')
 ]);
@@ -63,6 +67,10 @@ describe('RpcApp', function() {
     it('should throw if a service is added again', function() {
       var anotherApp = new app.RpcApp(testSvc, basicSvc);
       expect(function() { anotherApp.addService(testSvc); }).to.throw(Error);
+    });
+    it('should throw if a service is added again', function() {
+      var anotherApp = new app.RpcApp(testSvc);
+      expect(function() { anotherApp.addService(dupMethodSvc); }).to.throw(Error);
     });
   });
   describe('method `unmarshaller(route)`', function() {
@@ -131,8 +139,10 @@ describe('RpcApp', function() {
     });
     it('should adds dispatch functions to routes', function() {
       expect(theApp.hasRoute('/basic/noop')).to.be.false();
+      expect(theApp.handler('/basic/noop')).to.be.undefined();
       theApp.register('/basic/noop', _.noop);
       expect(theApp.hasRoute('/basic/noop')).to.be.true();
+      expect(theApp.handler('/basic/noop')).to.eql(_.noop);
     });
     it('should fail if the same route is registered twice', function() {
       theApp.register('/basic/noop', _.noop);

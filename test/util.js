@@ -122,9 +122,10 @@ exports.nextAvailablePort = function nextAvailablePort(done) {
  * @param {function} clientTask as described above
  */
 exports.listenOnFreePort = function listenOnFreePort(srv, clientTask) {
+  var serverUpDelay = 100; // milliseconds to wait for the server to come up
   var startServer = function startServer(addr) {
     srv.listen(addr.port, function() {
-      clientTask(addr, srv);
+      setTimeout(clientTask.bind(null, addr, srv), serverUpDelay);
     });
   };
   exports.nextAvailablePort(startServer);
@@ -143,4 +144,9 @@ exports.reverser = function reverser(s) {
 // irreverser is used as a test deserialization func
 exports.irreverser = function irreverser(s) {
   return s.toString().split('').reverse().join('');
+};
+
+// thrower is used as failing serialzation/deserialization func
+exports.thrower = function thrower(s) {
+  throw new Error(s);
 };

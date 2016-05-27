@@ -48,8 +48,10 @@ http2.globalAgent = new http2.Agent({ log: clientLog });
 var mathpb = dorusu.pb.requireProto('../example/math');
 var MathClient = mathpb.math.Math.Client;
 var testOptions = {
-  secure: secureOptions,
-  insecure: insecureOptions
+  secure: _.merge(_.clone(secureOptions), {
+    rejectUnauthorized: false
+  }),
+  insecure: _.clone(insecureOptions)
 };
 
 describe('Math Client', function() {

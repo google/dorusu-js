@@ -115,9 +115,12 @@ describe('RpcServer', function() {
   var msg = 'hello';
   var reply = 'world';
   var testOptions = {
-    secure: secureOptions,
-    insecure: insecureOptions
+    secure: _.merge(_.clone(secureOptions), {
+      rejectUnauthorized: false
+    }),
+    insecure: _.clone(insecureOptions)
   };
+
   _.forEach(testOptions, function(serverOptions, connType) {
     describe(connType + ': server with an app', function() {
       it('should use the fallback on unknown routes', function(done) {
@@ -645,6 +648,42 @@ describe('RpcServer', function() {
         };
         checkClientAndServer(thisClient, thisTest, serverOptions);
       });
+    });
+  });
+  describe('secure server factory', function() {
+    it('must specify options', function() {
+      var shouldFail = function shouldFail() {
+        dorusu.createServer(_.noop);  /* no options */
+      };
+      expect(shouldFail).to.throw(Error);
+    });
+    it('should specify both cert and key', function() {
+      _.forEach(['key', 'cert'], function(toRemove) {
+        var shouldFail = function shouldFail() {
+          var badOpts = _.clone(secureOptions);
+          delete badOpts[toRemove];
+          dorusu.createServer(badOpts, _.noop);
+        };
+        expect(shouldFail).to.throw(Error);
+      });
+    });
+    it('can be constructed with secure options', function() {
+      var shouldPass = function shouldPass() {
+        dorusu.createServer(secureOptions, _.noop);
+      };
+      expect(shouldPass).to.not.throw(Error);
+    });
+  });
+  describe('insecure server factory', function() {
+    it('may not specify options', function() {
+      var server = dorusu.raw.createServer(_.noop);
+      expect(server).to.be.ok();
+    });
+    it('should not fail with secure options cert and key', function() {
+      var shouldFail = function shouldFail() {
+        dorusu.raw.createServer(secureOptions, _.noop);
+      };
+      expect(shouldFail).to.throw(Error);
     });
   });
 });
