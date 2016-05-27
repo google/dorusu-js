@@ -65,8 +65,10 @@ var Stub = require('../lib/client').Stub;
 http2.globalAgent = new http2.Agent({ log: clientLog });
 
 var testOptions = {
-  secure: secureOptions,
-  insecure: insecureOptions
+  secure: _.merge(_.clone(secureOptions), {
+    rejectUnauthorized: false
+  }),
+  insecure: _.clone(insecureOptions)
 };
 
 describe('Service Client', function() {
@@ -424,12 +426,12 @@ describe('Base RPC Client', function() {
           checkClient(server, thisTest, serverOpts);
         });
       });
-      describe('special: on secure header', function() {
-        var action = 'block';
+      describe('special: secure headers', function() {
+        var action = 'blocked';
         if (connType === 'secure') {
-          action = 'allow';
+          action = 'allowed';
         }
-        it('should ' + action + ' the secure header', function(done) {
+        it('should be ' + action + ' by default', function(done) {
           // thisTest sends a dummy secure header
           var headers = {'authorization': 'dummyValue'};
           var thisTest = function(srv, stub) {
@@ -445,6 +447,60 @@ describe('Base RPC Client', function() {
           };
           checkClientAndServer(thisTest, _.noop, serverOpts);
         });
+        if (connType !== 'secure') {
+          describe('can be dropped', function() {
+            beforeEach(function(){
+              dorusu.configure({secureHeaderPolicy: dorusu.DROP_POLICY});
+            });
+            afterEach(function(){
+              dorusu.configure({secureHeaderPolicy: dorusu.FAIL_POLICY});
+            });
+            it('if the secureHeaderPolicy is dorusu.DROP_POLICY', function(done) {
+              var secureHeader = 'authorization';
+              // thisTest sends a dummy secure header
+              var headers = {};
+              headers[secureHeader] = 'a-secure-value';
+
+              var server = createServer(serverOpts, function(request) {
+                expect(request.headers.authorization).to.be.undefined();
+                server.close();
+                done();
+              });
+
+              // thisTest sends a secure header that should get dropped
+              var thisTest = function(srv, stub) {
+                stub.post(path, msg, _.noop, {headers: headers});
+              };
+              checkClient(server, thisTest, serverOpts);
+            });
+          });
+          describe('can be allowed', function() {
+            beforeEach(function(){
+              dorusu.configure({secureHeaderPolicy: dorusu.WARN_POLICY});
+            });
+            afterEach(function(){
+              dorusu.configure({secureHeaderPolicy: dorusu.FAIL_POLICY});
+            });
+            it('if the secureHeaderPolicy is dorusu.WARN_POLICY', function(done) {
+              var secureHeader = 'authorization';
+              // thisTest sends a dummy secure header
+              var headers = {};
+              headers[secureHeader] = 'a-secure-value';
+
+              var server = createServer(serverOpts, function(request) {
+                expect(request.headers.authorization).to.eql('a-secure-value');
+                server.close();
+                done();
+              });
+
+              // thisTest sends a secure header that should get dropped
+              var thisTest = function(srv, stub) {
+                stub.post(path, msg, _.noop, {headers: headers});
+              };
+              checkClient(server, thisTest, serverOpts);
+            });
+          });
+        }
       });
       describe('special: timeout headers', function() {
         it('should fail on sending a bad grpc-timeout value', function(done) {
@@ -472,19 +528,34 @@ describe('Base RPC Client', function() {
         it('should succeed in sending a good grpc-timeout value', function(done) {
           var headerName = 'grpc-timeout';
           var headerValue = '10S';
-          var server = createServer(serverOpts, function(request) {
-            expect(request.headers[headerName]).to.equal(headerValue);
-            server.close();
-            done();
-          });
 
           // thisTest sends the grpc-timeout header with a valid value.
           var headers = {};
           headers[headerName] = headerValue;
           var thisTest = function(srv, stub) {
-            stub.post(path, msg, _.noop, {headers: headers});
+            stub.post(path, msg, function(response) {
+              response.on('data', _.noop);
+              response.on('end', function() {
+                srv.close();
+                done();
+              });
+            }, {headers: headers});
           };
-          checkClient(server, thisTest, serverOpts);
+
+          var thisServer = function(request, response) {
+            var receiveThenReply = function() {
+              encodeMessage(reply, null, makeSendEncodedResponse(response));
+            };
+            request.on('data', function(data) {
+              expect(request.headers[headerName]).to.equal(headerValue);
+              response.sendDate = false;  // by default the date header gets sent
+              response.addTrailers({
+                'grpc-status': dorusu.rpcCode('OK')
+              });
+              decodeMessage(data, null, receiveThenReply);
+            });
+          };
+          checkClientAndServer(thisTest, thisServer, serverOpts);
         });
         it('should send a grpc-timeout when a deadline is provided', function(done) {
           // thisTest sends the test header.
@@ -870,7 +941,7 @@ function makeSendEncodedResponse(response) {
 function checkServiceClient(Ctor, server, clientExpects, opts) {
   listenOnFreePort(server, function(addr, server) {
     var stubOpts = {
-      log: clientLog
+      agent: require('../lib/client').globalAgent
     };
     _.merge(stubOpts, addr, opts);
     clientExpects(server, new Ctor(stubOpts));

@@ -46,10 +46,10 @@ var secureOptions = require('../example/certs').options;
 http2.globalAgent = new http2.Agent({ log: clientLog });
 
 var testOptions = {
-  secure: _.merge(secureOptions, {
+  secure: _.merge(_.clone(secureOptions), {
     rejectUnauthorized: false
   }),
-  insecure: insecureOptions
+  insecure: _.clone(insecureOptions)
 };
 
 describe('Interop Client', function() {

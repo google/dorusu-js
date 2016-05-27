@@ -42,6 +42,7 @@ var irreverser = require('./util').irreverser;
 var isInterval = require('../lib/codec').isInterval;
 var microsToInterval = require('../lib/codec').microsToInterval;
 var reverser = require('./util').reverser;
+var thrower = require('./util').thrower;
 
 var ConcatStream = require('concat-stream');
 var EncodingStream = require('../lib/codec').EncodingStream;
@@ -185,6 +186,23 @@ describe('codec', function() {
       source.pipe(enc).pipe(dec).pipe(sink);
       source.push(null);
     });
+    it('should signal an error if the unmarshalr fails', function(done){
+      var source = new Readable();
+      var num = 3; // arbitrary
+      for (var i = 0; i < num; i++) {
+        var nextMsg = 'msg' + i;
+        source.push(nextMsg);
+      }
+      var enc = new EncodingStream({marshal: reverser});
+      var dec = new DecodingStream({unmarshal: thrower});
+      source.pipe(enc).pipe(dec).on('error', function(got) {
+        var revFirstMsg = '0gsm';
+        expect(got).to.be.an.instanceof(Error);
+        expect(got.message).to.eql(revFirstMsg);
+        done();
+      });
+      source.push(null);
+    });
   });
 
   describe('EncodingStream', function() {
@@ -240,6 +258,21 @@ describe('codec', function() {
       source.pipe(enc).pipe(sink);
       source.push(null);
     });
+    it('should signal an error if the marshalr fails', function(done){
+      var num = 2; // arbitrary
+      var source = new Readable();
+      for (var i = 0; i < num; i++) {
+        source.push('msg' + i);
+      }
+      var enc = new EncodingStream({marshal: thrower});
+      source.pipe(enc).on('error', function(got) {
+        var firstMsg = 'msg0';
+        expect(got).to.be.an.instanceof(Error);
+        expect(got.message).to.eql(firstMsg);
+        done();
+      });
+      source.push(null);
+    });
   });
   describe('decodeMessage', function() {
     it('should fail if the message is too small', function(done) {
@@ -275,7 +308,7 @@ describe('codec', function() {
         done();
       });
     });
-    it('should apply the unmarshalr when present', function(done) {
+    it('should apply the unmarshalr when it is present', function(done) {
       var msg = 'some text';
       var suffix = new Buffer(msg);
       var prefix = new Buffer(5);
@@ -285,6 +318,19 @@ describe('codec', function() {
       decodeMessage(encoded, {unmarshal: irreverser}, function(err, s) {
         expect(err).to.be.null();
         expect(s).to.eql('txet emos');
+        done();
+      });
+    });
+    it('should signal an error if the unmarshalr fails', function(done) {
+      var msg = 'some text';
+      var suffix = new Buffer(msg);
+      var prefix = new Buffer(5);
+      prefix.writeUIntBE(0, 0, 1);
+      prefix.writeUIntBE(Buffer.byteLength(msg), 1, 4);
+      var encoded = Buffer.concat([prefix, suffix]);
+      decodeMessage(encoded, {unmarshal: thrower}, function(err) {
+        expect(err).to.be.an.instanceof(Error);
+        expect(err.message).to.eql(msg);
         done();
       });
     });
@@ -310,7 +356,7 @@ describe('codec', function() {
         done();
       });
     });
-    it('should apply the marshal when present', function(done) {
+    it('should apply the marshalr when present', function(done) {
       var msg = 'some text';
       var suffix = reverser(msg);
       var prefix = new Buffer(5);
@@ -319,6 +365,14 @@ describe('codec', function() {
       var want = Buffer.concat([prefix, suffix]);
       encodeMessage(msg, {marshal: reverser}, function(got) {
         expect(got).to.eql(want);
+        done();
+      });
+    });
+    it('should signal an error if the marshalr fails', function(done) {
+      var msg = 'some text';
+      encodeMessage(msg, {marshal: thrower}, function(got) {
+        expect(got).to.be.an.instanceof(Error);
+        expect(got.message).to.eql(msg);
         done();
       });
     });
