@@ -11,5 +11,7 @@ node_js:
 script:
   - npm test
   - npm run lint
+  - npm run install-go-interop
+  - npm run interop-test
 after_success:
   - npm run codecov
