@@ -99,8 +99,8 @@ function makeServer(opts) {
   opts = _.clone(opts);
   opts.log = serverLog;
   if (opts.plain) {
-    return dorusu.raw.createServer(opts, dorusu.unavailable);
+    return dorusu.raw.createServer(opts, dorusu.unimplemented);
   } else {
-    return dorusu.createServer(opts, dorusu.unavailable);
+    return dorusu.createServer(opts, dorusu.unimplemented);
   }
 }

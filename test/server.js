@@ -159,7 +159,7 @@ describe('RpcServer', function() {
         // here, null === no requestListener fallback
         checkClientAndServer(thisClient, fallback, appOptions);
       });
-      it('should use `dorusu.unavailable` as the default fallback', function(done) {
+      it('should use `dorusu.unimplemented` as the default fallback', function(done) {
         var thisClient = function(srv, stub) {
           stub.post(path, msg, function(response) {
             var theStatus;
@@ -174,11 +174,11 @@ describe('RpcServer', function() {
             response.on('end', function() {
               expect(theStatus).to.deep.equal({
                 'message': '',
-                'code': dorusu.rpcCode('UNAVAILABLE')
+                'code': dorusu.rpcCode('UNIMPLEMENTED')
               });
               expect(theError).to.deep.equal({
                 'message': '',
-                'code': dorusu.rpcCode('UNAVAILABLE')
+                'code': dorusu.rpcCode('UNIMPLEMENTED')
               });
               srv.close();
               done();
@@ -313,11 +313,11 @@ describe('RpcServer', function() {
             response.on('end', function() {
               expect(theStatus).to.deep.equal({
                 'message': '',
-                'code': dorusu.rpcCode('UNAVAILABLE')
+                'code': dorusu.rpcCode('UNIMPLEMENTED')
               });
               expect(theError).to.deep.equal({
                 'message': '',
-                'code': dorusu.rpcCode('UNAVAILABLE')
+                'code': dorusu.rpcCode('UNIMPLEMENTED')
               });
               srv.close();
               done();
@@ -342,11 +342,11 @@ describe('RpcServer', function() {
             response.on('end', function() {
               expect(theStatus).to.deep.equal({
                 'message': '',
-                'code': dorusu.rpcCode('UNAVAILABLE')
+                'code': dorusu.rpcCode('UNIMPLEMENTED')
               });
               expect(theError).to.deep.equal({
                 'message': '',
-                'code': dorusu.rpcCode('UNAVAILABLE')
+                'code': dorusu.rpcCode('UNIMPLEMENTED')
               });
               srv.close();
               done();
@@ -387,7 +387,7 @@ describe('RpcServer', function() {
         checkClientAndServer(thisClient, dispatcher, serverOptions);
       });
     });
-    describe(connType + ': `dorusu.unavailable`', function() {
+    describe(connType + ': `dorusu.unimplemented`', function() {
       it('should respond with rpcCode 404', function(done) {
         var thisClient = function(srv, stub) {
           stub.post(path, msg, function(response) {
@@ -403,11 +403,11 @@ describe('RpcServer', function() {
             response.on('end', function() {
               expect(theStatus).to.deep.equal({
                 'message': '',
-                'code': dorusu.rpcCode('UNAVAILABLE')
+                'code': dorusu.rpcCode('UNIMPLEMENTED')
               });
               expect(theError).to.deep.equal({
                 'message': '',
-                'code': dorusu.rpcCode('UNAVAILABLE')
+                'code': dorusu.rpcCode('UNIMPLEMENTED')
               });
               srv.close();
               done();
@@ -415,7 +415,7 @@ describe('RpcServer', function() {
           });
         };
 
-        checkClientAndServer(thisClient, dorusu.unavailable, serverOptions);
+        checkClientAndServer(thisClient, dorusu.unimplemented, serverOptions);
       });
     });
     describe(connType + ': simple request/response', function() {
