@@ -38,6 +38,7 @@ var chai = require('chai');
 chai.use(require('dirty-chai'));
 var clientLog = require('./util').clientLog;
 var decodeMessage = require('../lib/codec').decodeMessage;
+var dorusu = require('../lib/dorusu');
 var encodeMessage = require('../lib/codec').encodeMessage;
 var expect = chai.expect;
 var http2 = require('http2');
@@ -45,9 +46,9 @@ var insecureOptions = require('./util').insecureOptions;
 var irreverser = require('./util').irreverser;
 var listenOnFreePort = require('./util').listenOnFreePort;
 var reverser = require('./util').reverser;
-var dorusu = require('../lib/dorusu');
 var secureOptions = require('../example/certs').options;
 var serverLog = require('./util').serverLog;
+var thrower = require('./util').thrower;
 
 var Readable = require('stream').Readable;
 var Stub = require('../lib/client').Stub;
@@ -76,18 +77,19 @@ describe('Service Client', function() {
   var testService = app.Service('test', [
     app.Method('do_echo', reverser, irreverser),
     app.Method('do_reverse', reverser),
-    app.Method('do_irreverse', null, reverser)
+    app.Method('do_irreverse', null, reverser),
+    app.Method('do_throw_on_response', reverser, thrower)
   ]);
+  it('should build a constructor that adds the expected methods', function() {
+    var Ctor = app.buildClient(testService);
+    expect(Ctor).to.be.a('function');
+    var instance = new Ctor('http://localhost:8080/dummy/path');
+    expect(instance.doEcho).to.be.a('function');
+    expect(instance.doReverse).to.be.a('function');
+    expect(instance.doIrreverse).to.be.a('function');
+  });
   _.forEach(testOptions, function(serverOpts, connType) {
     describe(connType + ': function `app.buildClient(service)`', function() {
-      it('should build a constructor that adds the expected methods', function() {
-        var Ctor = app.buildClient(testService);
-        expect(Ctor).to.be.a('function');
-        var instance = new Ctor('http://localhost:8080/dummy/path');
-        expect(instance.doEcho).to.be.a('function');
-        expect(instance.doReverse).to.be.a('function');
-        expect(instance.doIrreverse).to.be.a('function');
-      });
       it('should send multiple messages ok', function(done) {
         // thisTest checks that the expected text is in the reply, and that the
         // server received two messages.
@@ -133,6 +135,44 @@ describe('Service Client', function() {
           };
           request.on('data', function(data) {
             count += 1;
+            response.addTrailers({'grpc-status': dorusu.rpcCode('OK')});
+            decodeMessage(data, null, validateReqThenRespond);
+          });
+        };
+        var testClient = app.buildClient(testService);
+        checkServiceClientAndServer(testClient, thisTest, thisServer, serverOpts);
+      });
+      it('should fail with status INTERNAL if response is not parsed', function(done) {
+        var thisTest = function(srv, stub) {
+          stub.doThrowOnResponse(msg, function(response) {
+            var theStatus;
+            var theError;
+            response.on('data', _.noop);
+            response.on('status', function(status) {
+              theStatus = status;
+            });
+            response.on('error', function(err) {
+              theError = err;
+            });
+            response.on('end', function() {
+              expect(theStatus).to.deep.equal({
+                'message': '',
+                'code': dorusu.rpcCode('INTERNAL')
+              });
+              expect(theError).to.be.ok();
+              srv.close();
+              done();
+            });
+          });
+        };
+        var wantedMsg = reverser(msg).toString();
+        var thisServer = function(request, response) {
+          expect(request.url).to.equal('/test/do_throw_on_response');
+          var validateReqThenRespond = function(err, decoded){
+            expect(decoded.toString()).to.equal(wantedMsg);
+            encodeMessage(wantedMsg, null, makeSendEncodedResponse(response));
+          };
+          request.on('data', function(data) {
             response.addTrailers({'grpc-status': dorusu.rpcCode('OK')});
             decodeMessage(data, null, validateReqThenRespond);
           });

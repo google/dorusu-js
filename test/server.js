@@ -43,6 +43,7 @@ var reverser = require('./util').reverser;
 var dorusu = require('../lib');
 var secureOptions = require('../example/certs').serverOptions;
 var serverLog = require('./util').serverLog;
+var thrower = require('./util').thrower;
 
 var Stub = require('../lib/client').Stub;
 
@@ -66,24 +67,22 @@ var testApp = new app.RpcApp(
   app.Service('test', [
     app.Method('do_echo', reverser, irreverser),
     app.Method('do_reverse', reverser),
-    app.Method('do_irreverse', null, reverser)
+    app.Method('do_irreverse', null, reverser),
+    app.Method('do_throw_on_encode', thrower, null),
+    app.Method('do_throw_on_decode', null, thrower)
   ])
 );
-testApp.register('/test/do_echo', function testHandler(request, response) {
+var echoHandler = function testHandler(request, response) {
   request.once('data', function(data) {
     response.end(data);
   });
-});
-testApp.register('/test/do_reverse', function testHandler(request, response) {
-  request.once('data', function(data) {
-    response.end(data);
-  });
-});
-testApp.register('/test/do_irreverse', function testHandler(request, response) {
-  request.once('data', function(data) {
-    response.end(data);
-  });
-});
+};
+testApp.register('/test/do_echo', echoHandler);
+testApp.register('/test/do_reverse', echoHandler);
+testApp.register('/test/do_irreverse', echoHandler);
+testApp.register('/test/do_throw_on_decode', echoHandler);
+testApp.register('/test/do_throw_on_encode', echoHandler);
+
 
 // Tests here can use the dorusu client as it's tests do not depend on RpcServer.
 //
@@ -239,6 +238,45 @@ describe('RpcServer', function() {
         var appOptions = _.clone(serverOptions);
         appOptions.app = testApp;
         checkClientAndServer(thisClient, _.noop, appOptions);
+      });
+      ['encode', 'decode'].forEach(function(whatFailed) {
+        it('should send status INTERNAL if ' + whatFailed + ' fails', function(done) {
+          var thisClient = function(srv, stub) {
+            var errorStatus = null;
+            var gotStatus = null;
+            var failingUri = '/test/do_throw_on_' + whatFailed;
+            stub.post(failingUri, msg, function(response) {
+              response.on('data', function(data) {
+                expect(true).to.be(false);  // on date should be received
+              });
+              response.on('end', function() {
+                expect(errorStatus).to.not.be.null();
+                expect(gotStatus).to.not.be.null();
+                srv.close();
+                done();
+              });
+              response.on('status', function(status) {
+                expect(status).to.deep.equal({
+                  'message': '',
+                  'code': dorusu.rpcCode('INTERNAL')
+                });
+                gotStatus = status;
+              });
+              response.on('error', function(status) {
+                expect(status).to.deep.equal({
+                  'message': '',
+                  'code': dorusu.rpcCode('INTERNAL')
+                });
+                errorStatus = status;
+              });
+            });
+          };
+
+          var appOptions = _.clone(serverOptions);
+          appOptions.app = testApp;
+          checkClientAndServer(thisClient, _.noop, appOptions);
+        });
+
       });
       it('should use the specified decoder on the request', function(done) {
         var thisClient = function(srv, stub) {
