@@ -618,7 +618,7 @@ describe('Base RPC Client', function() {
           var testDeadline = new Date();
           var nowPlus10 = Date.now() + Math.pow(10, 4);
           testDeadline.setTime(nowPlus10);
-          headers.deadline = testDeadline;
+          headers['grpc-timeout'] = testDeadline;
           var thisTest = function(srv, stub) {
             stub.post(path, msg, _.noop, {headers: headers});
           };
@@ -636,7 +636,7 @@ describe('Base RPC Client', function() {
           var testDeadline = new Date();
           var nowPlusHalfSec = Date.now() + 500; // 500 ms
           testDeadline.setTime(nowPlusHalfSec);
-          headers.deadline = testDeadline;
+          headers['grpc-timeout'] = testDeadline;
           var wantedCode = dorusu.rpcCode('DEADLINE_EXCEEDED');
           var thisTest = function(srv, stub) {
             var req = stub.post(path, msg, _.noop, { headers: headers});
