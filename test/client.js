@@ -345,6 +345,33 @@ describe('Base RPC Client', function() {
         _.merge(fullOpts, serverOpts);
         checkClient(server, thisTest, fullOpts);
       });
+      it('should signal failures to update the headers', function(done) {
+        var serviceNameHeader = 'service_name';
+        var headerName = 'name';
+        var headerValue = 'value';
+        var server = createServer(serverOpts, _.noop);
+
+        // thisTest sends a test header that gets add via the updateHeaders
+        // callback option.
+        var thisTest = function(srv, stub) {
+          var req = stub.post(path, msg, _.noop);
+          var theCode = null;
+          req.on('cancel', function(code) {
+            theCode = code;
+            expect(code).to.equal(dorusu.rpcCode('UNAUTHENTICATED'));
+            srv.close();
+            done();
+          });
+        };
+        var fullOpts = {
+          serviceName: 'testservice',
+          updateHeaders: function(_serviceName, _headers, next) {
+            next(new Error('header update failed'));
+          }
+        };
+        _.merge(fullOpts, serverOpts);
+        checkClient(server, thisTest, fullOpts);
+      });
       describe('single-valued, non-reserved', function() {
         it('should send headers when provided', function(done) {
           var headerName = 'name';
