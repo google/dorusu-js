@@ -77,7 +77,9 @@ var testApp = new app.RpcApp(
     app.Method('do_reverse', reverser),
     app.Method('do_irreverse', null, reverser),
     app.Method('do_throw_on_encode', thrower, null),
-    app.Method('do_throw_on_decode', null, thrower)
+    app.Method('do_throw_on_decode', null, thrower),
+    app.Method('try_echo_but_fail', reverser, irreverser),
+    app.Method('try_echo_but_fail2', reverser, irreverser)
   ])
 );
 testApp.register('/test/do_echo', echoHandler);
@@ -85,6 +87,8 @@ testApp.register('/test/do_reverse', echoHandler);
 testApp.register('/test/do_irreverse', echoHandler);
 testApp.register('/test/do_throw_on_decode', echoHandler);
 testApp.register('/test/do_throw_on_encode', echoHandler);
+testApp.register('/test/try_echo_but_fail', throwingHandler);
+testApp.register('/test/try_echo_but_fail2', throwingHandler2);
 
 
 // Tests here can use the dorusu client as it's tests do not depend on RpcServer.
@@ -267,7 +271,7 @@ describe('RpcServer', function() {
       });
       it('should apply the timeout on server', function(done) {
         var thisClient = function(srv, stub) {
-          var req = stub.post('/test/delayed_by_a_half', msg, _.noop, {
+          stub.post('/test/delayed_by_a_half', msg, _.noop, {
             headers: {
               'grpc-timeout': '300m'
             }
@@ -284,14 +288,14 @@ describe('RpcServer', function() {
           });
           request.on('cancel', function(code) {
             // complete the test on server
-            if (code == dorusu.rpcCode('DEADLINE_EXCEEDED')) {
+            if (code === dorusu.rpcCode('DEADLINE_EXCEEDED')) {
               // complete the test when the server deadline exceeded
               // occurs
               done();
             } else {
               // the cancel from the client closing the stream may also
               // occur
-              expect(code).to.eql(dorusu.rpcCode('CANCELLED'))
+              expect(code).to.eql(dorusu.rpcCode('CANCELLED'));
             }
           });
         };
@@ -301,7 +305,72 @@ describe('RpcServer', function() {
         appOptions.app.register('/test/delayed_by_a_half', lateHandler);
         checkClientAndServer(thisClient, _.noop, appOptions);
       });
+      it('should send status UNKNOWN if response handler fails', function(done) {
+        var thisClient = function(srv, stub) {
+          stub.post('/test/try_echo_but_fail', msg, function(response) {
+            var errorStatus = null;
+            var gotStatus = null;
+            response.on('data', _.noop);
+            response.on('end', function() {
+              expect(errorStatus).to.not.be.null();
+              expect(gotStatus).to.not.be.null();
+              srv.close();
+              done();
+            });
+            response.on('status', function(status) {
+              expect(status).to.deep.equal({
+                'message': '',
+                'code': dorusu.rpcCode('UNKNOWN')
+              });
+              gotStatus = status;
+            });
+            response.on('error', function(status) {
+              expect(status).to.deep.equal({
+                'message': '',
+                'code': dorusu.rpcCode('UNKNOWN')
+              });
+              errorStatus = status;
+            });
+          });
+        };
 
+        var appOptions = _.clone(serverOptions);
+        appOptions.app = testApp;
+        checkClientAndServer(thisClient, _.noop, appOptions);
+      });
+      it('should send status UNKNOWN if data handler fails', function(done) {
+        var thisClient = function(srv, stub) {
+          stub.post('/test/try_echo_but_fail2', msg, function(response) {
+            var errorStatus = null;
+            var gotStatus = null;
+            response.on('data', _.noop);
+            response.on('end', function() {
+              expect(errorStatus).to.not.be.null();
+              expect(gotStatus).to.not.be.null();
+              srv.close();
+              done();
+            });
+            response.on('status', function(status) {
+              expect(status).to.deep.equal({
+                'message': '',
+                'code': dorusu.rpcCode('UNKNOWN')
+              });
+              gotStatus = status;
+            });
+            response.on('error', function(status) {
+              expect(status).to.deep.equal({
+                'message': '',
+                'code': dorusu.rpcCode('UNKNOWN')
+              });
+              errorStatus = status;
+            });
+          });
+        };
+
+        var appOptions = _.clone(serverOptions);
+        appOptions.app = testApp;
+        checkClientAndServer(thisClient, _.noop, appOptions);
+      });
       ['encode', 'decode'].forEach(function(whatFailed) {
         it('should send status INTERNAL if ' + whatFailed + ' fails', function(done) {
           var thisClient = function(srv, stub) {
@@ -819,6 +888,16 @@ function delayedHandler(request, response) {
     // reply in 500ms, timing tests will use timeouts either much shorter or
     // much longer than that
     setTimeout(() => { response.end(data); }, 500);
+  });
+}
+
+function throwingHandler() {
+  throw new Error('something went wrong');
+}
+
+function throwingHandler2(request) {
+  request.once('data', () => {
+    throw new Error('something went wrong');
   });
 }
 

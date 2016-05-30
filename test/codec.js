@@ -196,9 +196,7 @@ describe('codec', function() {
       var enc = new EncodingStream({marshal: reverser});
       var dec = new DecodingStream({unmarshal: thrower});
       source.pipe(enc).pipe(dec).on('error', function(got) {
-        var revFirstMsg = '0gsm';
-        expect(got).to.be.an.instanceof(Error);
-        expect(got.message).to.eql(revFirstMsg);
+        expect(got).to.eql(dec);
         done();
       });
       source.push(null);
