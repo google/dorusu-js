@@ -346,9 +346,6 @@ describe('Base RPC Client', function() {
         checkClient(server, thisTest, fullOpts);
       });
       it('should signal failures to update the headers', function(done) {
-        var serviceNameHeader = 'service_name';
-        var headerName = 'name';
-        var headerValue = 'value';
         var server = createServer(serverOpts, _.noop);
 
         // thisTest sends a test header that gets add via the updateHeaders
@@ -571,24 +568,15 @@ describe('Base RPC Client', function() {
       });
       describe('special: timeout headers', function() {
         it('should fail on sending a bad grpc-timeout value', function(done) {
-          // thisTest sends a bad grpc-timeout header.
+          // thisTest trys to send a bad grpc-timeout header.
           var headers = {};
           headers['grpc-timeout'] = 'this will not work';
           var thisTest = function(srv, stub) {
-            // TODO: investigate a way of writing EncodedOutgoingRequest._start
-            // so that error handling of this case is simpler
-            try {
-              var req = stub.post(path, msg, _.noop, {headers: headers});
-              req.on('error', function(){
-                // This works when the timeout is bad for secure requests
-                srv.close();
-                done();
-              });
-            } catch (err) {
-              // This works when the timeout is bad for insecure requests
+            var req = stub.post(path, msg, _.noop, {headers: headers});
+            req.on('error', function(){
               srv.close();
               done();
-            }
+            });
           };
           checkClientAndServer(thisTest, _.noop, serverOpts);
         });
