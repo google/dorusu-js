@@ -150,3 +150,23 @@ exports.irreverser = function irreverser(s) {
 exports.thrower = function thrower(s) {
   throw new Error(s);
 };
+
+exports.checkResponseUsing = function checkResponseUsing(onEnd) {
+  return function(response) {
+    var gotStatus;
+    var gotError;
+    var gotData = [];
+    response.on('data', function(data) {
+      gotData.push(data);
+    });
+    response.once('status', function(status) {
+      gotStatus = status;
+    });
+    response.once('error', function(err) {
+    gotError = err;
+    });
+    response.once('end', function() {
+      onEnd(gotStatus, gotError, gotData);
+    });
+  };
+};
