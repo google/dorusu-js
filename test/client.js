@@ -315,6 +315,27 @@ describe('Base RPC Client', function() {
         });
       });
     });
+    describe(connType + ': when a parent request is provided', function() {
+      it('should be added as a child of the parent', function(done) {
+        var server = createServer(serverOpts, _.noop);
+        var addedChild = null;
+        var fakeParent = {
+            addChild: function (c) {
+              addedChild = c;
+            }
+        };
+
+        // thisTest confirms that the request is added a child of the
+        // parent
+        var thisTest = function(srv, stub) {
+          stub.post(path, msg, _.noop, {parent: fakeParent});
+          expect(addedChild).to.be.ok();
+          srv.close();
+          done();
+        };
+        checkClient(server, thisTest, serverOpts);
+      });
+    });
     describe(connType + ': headers', function() {
       it('should update headers via options.updateHeaders', function(done) {
         var serviceNameHeader = 'service_name';
