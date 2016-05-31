@@ -44,6 +44,7 @@ var encodeMessage = require('../lib/codec').encodeMessage;
 var expect = chai.expect;
 var http2 = require('http2');
 var insecureOptions = require('./util').insecureOptions;
+var intervalToMicros = require('../lib/codec').intervalToMicros;
 var irreverser = require('./util').irreverser;
 var listenOnFreePort = require('./util').listenOnFreePort;
 var reverser = require('./util').reverser;
@@ -291,6 +292,117 @@ describe('Base RPC Client', function() {
           done();
         }
         checkClient(server, thisTest, serverOpts);
+      });
+
+      var higherTimeout = '8S',
+          lowerTimeout = '1S',
+          testTimeout = '5S',
+          timeoutHeader = 'grpc-timeout';
+
+      describe('if the parent has no deadline', function(){
+        var fakeParent = {
+          addChild: _.noop
+        };
+        it('should succeed in sending a good grpc-timeout value', function(done) {
+          // thisTest sends the grpc-timeout header with a valid value.
+          var headers = {};
+          headers[timeoutHeader] = testTimeout;
+          function thisTest(srv, stub) {
+            stub.post(path, msg, function(response) {
+              response.on('data', _.noop);
+              response.on('end', function() {
+                srv.close();
+                done();
+              });
+            }, {headers: headers, parent: fakeParent});
+          }
+
+          function thisServer(request, response) {
+            var receiveThenReply = function() {
+              encodeMessage(reply, null, makeSendEncodedResponse(response));
+            };
+            request.on('data', function(data) {
+              expect(request.headers[timeoutHeader]).to.equal(testTimeout);
+              response.addTrailers({
+                'grpc-status': dorusu.rpcCode('OK')
+              });
+              decodeMessage(data, null, receiveThenReply);
+            });
+          }
+          checkClientAndServer(thisTest, thisServer, serverOpts);
+        });
+      });
+      describe('if the parent has a deadline', function(){
+        it('should use the parent deadline if it is shorter', function(done){
+          // thisTest sends the grpc-timeout header with a valid value.
+          var now = Date.now(),
+              lowerDeadline = now + (intervalToMicros(lowerTimeout) / 1000);
+          var fakeParent = {
+            addChild: _.noop,
+            deadline: new Date(lowerDeadline)
+          };
+          var headers = {};
+          headers[timeoutHeader] = testTimeout;
+          function thisTest(srv, stub) {
+            stub.post(path, msg, function(response) {
+              response.on('data', _.noop);
+              response.on('end', function() {
+                srv.close();
+                done();
+              });
+            }, {headers: headers, parent: fakeParent});
+          }
+
+          function thisServer(request, response) {
+            var receiveThenReply = function() {
+              encodeMessage(reply, null, makeSendEncodedResponse(response));
+            };
+            request.on('data', function(data) {
+              var wantLimit = intervalToMicros(testTimeout),
+                  got = intervalToMicros(request.headers[timeoutHeader]);
+              expect(got).to.be.below(wantLimit);
+              response.addTrailers({
+                'grpc-status': dorusu.rpcCode('OK')
+              });
+              decodeMessage(data, null, receiveThenReply);
+            });
+          }
+          checkClientAndServer(thisTest, thisServer, serverOpts);
+        });
+        it('should use the provided deadline if it is shorter', function(done){
+          // thisTest sends the grpc-timeout header with a valid value.
+          var now = Date.now(),
+              higherDeadline = now + (intervalToMicros(higherTimeout) / 1000);
+          var fakeParent = {
+            addChild: _.noop,
+            deadline: new Date(higherDeadline)
+          };
+          var headers = {};
+          headers[timeoutHeader] = testTimeout;
+          function thisTest(srv, stub) {
+            stub.post(path, msg, function(response) {
+              response.on('data', _.noop);
+              response.on('end', function() {
+                srv.close();
+                done();
+              });
+            }, {headers: headers, parent: fakeParent});
+          }
+
+          function thisServer(request, response) {
+            var receiveThenReply = function() {
+              encodeMessage(reply, null, makeSendEncodedResponse(response));
+            };
+            request.on('data', function(data) {
+              expect(request.headers[timeoutHeader]).to.equal(testTimeout);
+              response.addTrailers({
+                'grpc-status': dorusu.rpcCode('OK')
+              });
+              decodeMessage(data, null, receiveThenReply);
+            });
+          }
+          checkClientAndServer(thisTest, thisServer, serverOpts);
+        });
       });
     });
     describe(connType + ': headers', function() {

@@ -71,14 +71,10 @@ At this point in time, dorusu-js is missing features that [grpc-nodejs][]
 provides, e.g,
 
 - automatic connection retrys with [exponential backoff][] in clients
-- cascading cancellation in servers
-- deadline propagation in servers
 - automated stress tests in the CI environment
 - automated perfomance tests in the CI environment
-- [error-code compliance][]
 - a [health-check service](https://github.com/grpc/grpc/pull/2322)
 
-[error-code compliance]:https://github.com/grpc/grpc/blob/master/doc/statuscodes.md
 [exponential backoff]:https://github.com/grpc/grpc/blob/master/doc/connection-backoff.md
 
 There are also other features that are planned for [grpc-nodejs][] that dorusu-js
