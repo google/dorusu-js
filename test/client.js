@@ -36,6 +36,7 @@ var _ = require('lodash');
 var app = require('../lib/app');
 var chai = require('chai');
 chai.use(require('dirty-chai'));
+var checkResponseUsing = require('./util').checkResponseUsing;
 var clientLog = require('./util').clientLog;
 var decodeMessage = require('../lib/codec').decodeMessage;
 var dorusu = require('../lib/dorusu');
@@ -43,6 +44,7 @@ var encodeMessage = require('../lib/codec').encodeMessage;
 var expect = chai.expect;
 var http2 = require('http2');
 var insecureOptions = require('./util').insecureOptions;
+var intervalToMicros = require('../lib/codec').intervalToMicros;
 var irreverser = require('./util').irreverser;
 var listenOnFreePort = require('./util').listenOnFreePort;
 var reverser = require('./util').reverser;
@@ -94,37 +96,25 @@ describe('Service Client', function() {
         // thisTest checks that the expected text is in the reply, and that the
         // server received two messages.
         var count = 0;
-        var thisTest = function(srv, stub) {
+        function thisTest(srv, stub) {
           var msgs = new Readable();
           msgs.push(msg);
           msgs.push(msg);
           msgs.push(null);
-          stub.doEcho(msgs, function(response) {
-            var theStatus;
-            var theError;
-            response.on('data', function(data) {
-              expect(data.toString()).to.equal(msg);
+          function onEnd(gotStatus, gotError) {
+            expect(gotStatus).to.deep.equal({
+              'message': '',
+              'code': dorusu.rpcCode('OK')
             });
-            response.on('status', function(status) {
-              theStatus = status;
-            });
-            response.on('error', function(err) {
-              theError = err;
-            });
-            response.on('end', function() {
-              expect(theStatus).to.deep.equal({
-                'message': '',
-                'code': dorusu.rpcCode('OK')
-              });
-              expect(theError).to.be.undefined();
-              expect(count).to.eql(2);
-              srv.close();
-              done();
-            });
-          });
-        };
+            expect(gotError).to.be.undefined();
+            expect(count).to.eql(2);
+            srv.close();
+            done();
+          }
+          stub.doEcho(msgs, checkResponseUsing(onEnd));
+        }
         var wantedMsg = reverser(msg).toString();
-        var thisServer = function(request, response) {
+        function thisServer(request, response) {
           expect(request.url).to.equal('/test/do_echo');
           var validateReqThenRespond = function(err, decoded){
             expect(decoded.toString()).to.equal(wantedMsg);
@@ -138,35 +128,25 @@ describe('Service Client', function() {
             response.addTrailers({'grpc-status': dorusu.rpcCode('OK')});
             decodeMessage(data, null, validateReqThenRespond);
           });
-        };
+        }
         var testClient = app.buildClient(testService);
         checkServiceClientAndServer(testClient, thisTest, thisServer, serverOpts);
       });
       it('should fail with status INTERNAL if response is not parsed', function(done) {
-        var thisTest = function(srv, stub) {
-          stub.doThrowOnResponse(msg, function(response) {
-            var theStatus;
-            var theError;
-            response.on('data', _.noop);
-            response.on('status', function(status) {
-              theStatus = status;
+        function thisTest(srv, stub) {
+          function onEnd(gotStatus, gotError) {
+            expect(gotStatus).to.deep.equal({
+              'message': '',
+              'code': dorusu.rpcCode('INTERNAL')
             });
-            response.on('error', function(err) {
-              theError = err;
-            });
-            response.on('end', function() {
-              expect(theStatus).to.deep.equal({
-                'message': '',
-                'code': dorusu.rpcCode('INTERNAL')
-              });
-              expect(theError).to.be.ok();
-              srv.close();
-              done();
-            });
-          });
-        };
+            expect(gotError).to.be.ok();
+            srv.close();
+            done();
+          }
+          stub.doThrowOnResponse(msg, checkResponseUsing(onEnd));
+        }
         var wantedMsg = reverser(msg).toString();
-        var thisServer = function(request, response) {
+        function thisServer(request, response) {
           expect(request.url).to.equal('/test/do_throw_on_response');
           var validateReqThenRespond = function(err, decoded){
             expect(decoded.toString()).to.equal(wantedMsg);
@@ -176,7 +156,7 @@ describe('Service Client', function() {
             response.addTrailers({'grpc-status': dorusu.rpcCode('OK')});
             decodeMessage(data, null, validateReqThenRespond);
           });
-        };
+        }
         var testClient = app.buildClient(testService);
         checkServiceClientAndServer(testClient, thisTest, thisServer, serverOpts);
       });
@@ -216,37 +196,26 @@ describe('Base RPC Client', function() {
           // thisTest checks that the expected text is in the reply,
           // and that the server received two messages.
           var count = 0;
-          var thisTest = function(srv, stub) {
+          function thisTest(srv, stub) {
             var call = stub.rpcFunc(opts.marshal, opts.unmarshal);
             var msgs = new Readable();
             msgs.push(msg);
             msgs.push(msg);
             msgs.push(null);
-            call(path, msgs, function(response) {
-              var theStatus;
-              var theError;
-              response.on('data', function(data) {
-                expect(data.toString()).to.equal(reply);
+            function onEnd(gotStatus, gotError, gotData) {
+              expect(gotData[0].toString()).to.equal(reply);
+              expect(gotStatus).to.deep.equal({
+                'message': '',
+                'code': dorusu.rpcCode('OK')
               });
-              response.on('status', function(status) {
-                theStatus = status;
-              });
-              response.on('error', function(err) {
-                theError = err;
-              });
-              response.on('end', function() {
-                expect(theStatus).to.deep.equal({
-                  'message': '',
-                  'code': dorusu.rpcCode('OK')
-                });
-                expect(theError).to.be.undefined();
-                expect(count).to.eql(2);
-                srv.close();
-                done();
-              });
-            });
-          };
-          var thisServer = function(request, response) {
+              expect(gotError).to.be.undefined();
+              expect(count).to.eql(2);
+              srv.close();
+              done();
+            }
+            call(path, msgs, checkResponseUsing(onEnd));
+          }
+          function thisServer(request, response) {
             expect(request.url).to.equal(path);
             var validateReqThenRespond = function(err, decoded){
               expect(decoded.toString()).to.equal(wantedReq);
@@ -260,7 +229,7 @@ describe('Base RPC Client', function() {
               response.addTrailers({'grpc-status': dorusu.rpcCode('OK')});
               decodeMessage(data, null, validateReqThenRespond);
             });
-          };
+          }
           checkClientAndServer(thisTest, thisServer, serverOpts);
         });
       });
@@ -275,32 +244,21 @@ describe('Base RPC Client', function() {
           }
           // thisTest checks that the expected text is in the reply, i.e, it
           // has been decoded successfully.
-          var thisTest = function(srv, stub) {
+          function thisTest(srv, stub) {
             var call = stub.rpcFunc(opts.marshal, opts.unmarshal);
-            call(path, msg, function(response) {
-              var theStatus;
-              var theError;
-              response.on('data', function(data) {
-                expect(data.toString()).to.equal(reply);
+            function onEnd(gotStatus, gotError, gotData) {
+              expect(gotData[0].toString()).to.equal(reply);
+              expect(gotStatus).to.deep.equal({
+                'message': '',
+                'code': dorusu.rpcCode('OK')
               });
-              response.on('status', function(status) {
-                theStatus = status;
-              });
-              response.on('error', function(err) {
-                theError = err;
-              });
-              response.on('end', function() {
-                expect(theStatus).to.deep.equal({
-                  'message': '',
-                  'code': dorusu.rpcCode('OK')
-                });
-                expect(theError).to.be.undefined();
-                srv.close();
-                done();
-              });
-            });
-          };
-          var thisServer = function(request, response) {
+              expect(gotError).to.be.undefined();
+              srv.close();
+              done();
+            }
+            call(path, msg, checkResponseUsing(onEnd));
+          }
+          function thisServer(request, response) {
             expect(request.url).to.equal(path);
             var validateReqThenRespond = function(err, decoded){
               expect(decoded.toString()).to.equal(wantedReq);
@@ -310,7 +268,139 @@ describe('Base RPC Client', function() {
               response.addTrailers({'grpc-status': dorusu.rpcCode('OK')});
               decodeMessage(data, null, validateReqThenRespond);
             });
+          }
+          checkClientAndServer(thisTest, thisServer, serverOpts);
+        });
+      });
+    });
+    describe(connType + ': when a parent request is provided', function() {
+      it('should be added as a child of the parent', function(done) {
+        var server = createServer(serverOpts, _.noop);
+        var addedChild = null;
+        var fakeParent = {
+            addChild: function (c) {
+              addedChild = c;
+            }
+        };
+
+        // thisTest confirms that the request is added a child of the
+        // parent
+        function thisTest(srv, stub) {
+          stub.post(path, msg, _.noop, {parent: fakeParent});
+          expect(addedChild).to.be.ok();
+          srv.close();
+          done();
+        }
+        checkClient(server, thisTest, serverOpts);
+      });
+
+      var higherTimeout = '8S',
+          lowerTimeout = '1S',
+          testTimeout = '5S',
+          timeoutHeader = 'grpc-timeout';
+
+      describe('if the parent has no deadline', function(){
+        var fakeParent = {
+          addChild: _.noop
+        };
+        it('should succeed in sending a good grpc-timeout value', function(done) {
+          // thisTest sends the grpc-timeout header with a valid value.
+          var headers = {};
+          headers[timeoutHeader] = testTimeout;
+          function thisTest(srv, stub) {
+            stub.post(path, msg, function(response) {
+              response.on('data', _.noop);
+              response.on('end', function() {
+                srv.close();
+                done();
+              });
+            }, {headers: headers, parent: fakeParent});
+          }
+
+          function thisServer(request, response) {
+            var receiveThenReply = function() {
+              encodeMessage(reply, null, makeSendEncodedResponse(response));
+            };
+            request.on('data', function(data) {
+              expect(request.headers[timeoutHeader]).to.equal(testTimeout);
+              response.addTrailers({
+                'grpc-status': dorusu.rpcCode('OK')
+              });
+              decodeMessage(data, null, receiveThenReply);
+            });
+          }
+          checkClientAndServer(thisTest, thisServer, serverOpts);
+        });
+      });
+      describe('if the parent has a deadline', function(){
+        it('should use the parent deadline if it is shorter', function(done){
+          // thisTest sends the grpc-timeout header with a valid value.
+          var now = Date.now(),
+              lowerDeadline = now + (intervalToMicros(lowerTimeout) / 1000);
+          var fakeParent = {
+            addChild: _.noop,
+            deadline: new Date(lowerDeadline)
           };
+          var headers = {};
+          headers[timeoutHeader] = testTimeout;
+          function thisTest(srv, stub) {
+            stub.post(path, msg, function(response) {
+              response.on('data', _.noop);
+              response.on('end', function() {
+                srv.close();
+                done();
+              });
+            }, {headers: headers, parent: fakeParent});
+          }
+
+          function thisServer(request, response) {
+            var receiveThenReply = function() {
+              encodeMessage(reply, null, makeSendEncodedResponse(response));
+            };
+            request.on('data', function(data) {
+              var wantLimit = intervalToMicros(testTimeout),
+                  got = intervalToMicros(request.headers[timeoutHeader]);
+              expect(got).to.be.below(wantLimit);
+              response.addTrailers({
+                'grpc-status': dorusu.rpcCode('OK')
+              });
+              decodeMessage(data, null, receiveThenReply);
+            });
+          }
+          checkClientAndServer(thisTest, thisServer, serverOpts);
+        });
+        it('should use the provided deadline if it is shorter', function(done){
+          // thisTest sends the grpc-timeout header with a valid value.
+          var now = Date.now(),
+              higherDeadline = now + (intervalToMicros(higherTimeout) / 1000);
+          var fakeParent = {
+            addChild: _.noop,
+            deadline: new Date(higherDeadline)
+          };
+          var headers = {};
+          headers[timeoutHeader] = testTimeout;
+          function thisTest(srv, stub) {
+            stub.post(path, msg, function(response) {
+              response.on('data', _.noop);
+              response.on('end', function() {
+                srv.close();
+                done();
+              });
+            }, {headers: headers, parent: fakeParent});
+          }
+
+          function thisServer(request, response) {
+            var receiveThenReply = function() {
+              encodeMessage(reply, null, makeSendEncodedResponse(response));
+            };
+            request.on('data', function(data) {
+              expect(request.headers[timeoutHeader]).to.equal(testTimeout);
+              response.addTrailers({
+                'grpc-status': dorusu.rpcCode('OK')
+              });
+              decodeMessage(data, null, receiveThenReply);
+            });
+          }
           checkClientAndServer(thisTest, thisServer, serverOpts);
         });
       });
@@ -330,9 +420,9 @@ describe('Base RPC Client', function() {
 
         // thisTest sends a test header that gets add via the updateHeaders
         // callback option.
-        var thisTest = function(srv, stub) {
+        function thisTest(srv, stub) {
           stub.post(path, msg, _.noop);
-        };
+        }
         var fullOpts = {
           serviceName: 'testservice',
           updateHeaders: function(serviceName, headers, done) {
@@ -346,11 +436,8 @@ describe('Base RPC Client', function() {
         checkClient(server, thisTest, fullOpts);
       });
       it('should signal failures to update the headers', function(done) {
-        var server = createServer(serverOpts, _.noop);
-
-        // thisTest sends a test header that gets add via the updateHeaders
-        // callback option.
-        var thisTest = function(srv, stub) {
+        // thisTest fails to update the headers in the updateHeaders func
+        function thisTest(srv, stub) {
           var req = stub.post(path, msg, _.noop);
           var theCode = null;
           req.on('cancel', function(code) {
@@ -359,7 +446,7 @@ describe('Base RPC Client', function() {
             srv.close();
             done();
           });
-        };
+        }
         var fullOpts = {
           serviceName: 'testservice',
           updateHeaders: function(_serviceName, _headers, next) {
@@ -367,7 +454,7 @@ describe('Base RPC Client', function() {
           }
         };
         _.merge(fullOpts, serverOpts);
-        checkClient(server, thisTest, fullOpts);
+        checkClientAndServer(thisTest, _.noop, fullOpts);
       });
       describe('single-valued, non-reserved', function() {
         it('should send headers when provided', function(done) {
@@ -382,9 +469,9 @@ describe('Base RPC Client', function() {
           // thisTest sends a test header.
           var headers = {};
           headers[headerName] = headerValue;
-          var thisTest = function(srv, stub) {
+          function thisTest(srv, stub) {
             stub.post(path, msg, _.noop, {headers: headers});
-          };
+          }
           checkClient(server, thisTest, serverOpts);
         });
         it('should base64+rename if value is a Buffer', function(done) {
@@ -401,9 +488,9 @@ describe('Base RPC Client', function() {
           // thisTest sends a test header with Buffer value.
           var headers = {};
           headers[headerName] = headerValue;
-          var thisTest = function(srv, stub) {
+          function thisTest(srv, stub) {
             stub.post(path, msg, _.noop, {headers: headers});
-          };
+          }
           checkClient(server, thisTest, serverOpts);
         });
         it('should base64+rename if value is non-ascii', function(done) {
@@ -420,9 +507,9 @@ describe('Base RPC Client', function() {
           // thisTest sends a test header with an non-ascii value
           var headers = {};
           headers[headerName] = headerValue;
-          var thisTest = function(srv, stub) {
+          function thisTest(srv, stub) {
             stub.post(path, msg, _.noop, {headers: headers});
-          };
+          }
           checkClient(server, thisTest, serverOpts);
         });
       });
@@ -439,9 +526,9 @@ describe('Base RPC Client', function() {
           // thisTest sends a test header with an array value
           var headers = {};
           headers[headerName] = headerValue;
-          var thisTest = function(srv, stub) {
+          function thisTest(srv, stub) {
             stub.post(path, msg, _.noop, {headers: headers});
-          };
+          }
           checkClient(server, thisTest, serverOpts);
         });
         it('should base64+rename if any item is a Buffer', function(done) {
@@ -462,9 +549,9 @@ describe('Base RPC Client', function() {
           // value.
           var headers = {};
           headers[headerName] = headerValue;
-          var thisTest = function(srv, stub) {
+          function thisTest(srv, stub) {
             stub.post(path, msg, _.noop, {headers: headers});
-          };
+          }
           checkClient(server, thisTest, serverOpts);
         });
         it('should base64+rename if any item that is non-ascii', function(done) {
@@ -484,9 +571,9 @@ describe('Base RPC Client', function() {
           // value.
           var headers = {};
           headers[headerName] = headerValue;
-          var thisTest = function(srv, stub) {
+          function thisTest(srv, stub) {
             stub.post(path, msg, _.noop, {headers: headers});
-          };
+          }
           checkClient(server, thisTest, serverOpts);
         });
       });
@@ -498,7 +585,7 @@ describe('Base RPC Client', function() {
         it('should be ' + action + ' by default', function(done) {
           // thisTest sends a dummy secure header
           var headers = {'authorization': 'dummyValue'};
-          var thisTest = function(srv, stub) {
+          function thisTest(srv, stub) {
             try {
               stub.post(path, msg, _.noop, {headers: headers});
               expect(connType).to.equal('secure');
@@ -508,10 +595,14 @@ describe('Base RPC Client', function() {
               srv.close();
               done();
             }
-          };
+          }
           checkClientAndServer(thisTest, _.noop, serverOpts);
         });
         if (connType !== 'secure') {
+          var secureValue = 'a-secure-value',
+              headers = {
+                authorization: secureValue
+              };
           describe('can be dropped', function() {
             beforeEach(function(){
               dorusu.configure({secureHeaderPolicy: dorusu.DROP_POLICY});
@@ -520,21 +611,15 @@ describe('Base RPC Client', function() {
               dorusu.configure({secureHeaderPolicy: dorusu.FAIL_POLICY});
             });
             it('if the secureHeaderPolicy is dorusu.DROP_POLICY', function(done) {
-              var secureHeader = 'authorization';
-              // thisTest sends a dummy secure header
-              var headers = {};
-              headers[secureHeader] = 'a-secure-value';
-
+              // thisTest sends a secure header that should get dropped
+              function thisTest(srv, stub) {
+                stub.post(path, msg, _.noop, {headers: headers});
+              }
               var server = createServer(serverOpts, function(request) {
                 expect(request.headers.authorization).to.be.undefined();
                 server.close();
                 done();
               });
-
-              // thisTest sends a secure header that should get dropped
-              var thisTest = function(srv, stub) {
-                stub.post(path, msg, _.noop, {headers: headers});
-              };
               checkClient(server, thisTest, serverOpts);
             });
           });
@@ -546,21 +631,15 @@ describe('Base RPC Client', function() {
               dorusu.configure({secureHeaderPolicy: dorusu.FAIL_POLICY});
             });
             it('if the secureHeaderPolicy is dorusu.WARN_POLICY', function(done) {
-              var secureHeader = 'authorization';
-              // thisTest sends a dummy secure header
-              var headers = {};
-              headers[secureHeader] = 'a-secure-value';
-
+              // thisTest sends a secure header that is allowed through
+              function thisTest(srv, stub) {
+                stub.post(path, msg, _.noop, {headers: headers});
+              }
               var server = createServer(serverOpts, function(request) {
-                expect(request.headers.authorization).to.eql('a-secure-value');
+                expect(request.headers.authorization).to.eql(secureValue);
                 server.close();
                 done();
               });
-
-              // thisTest sends a secure header that should get dropped
-              var thisTest = function(srv, stub) {
-                stub.post(path, msg, _.noop, {headers: headers});
-              };
               checkClient(server, thisTest, serverOpts);
             });
           });
@@ -571,13 +650,13 @@ describe('Base RPC Client', function() {
           // thisTest trys to send a bad grpc-timeout header.
           var headers = {};
           headers['grpc-timeout'] = 'this will not work';
-          var thisTest = function(srv, stub) {
+          function thisTest(srv, stub) {
             var req = stub.post(path, msg, _.noop, {headers: headers});
             req.on('error', function(){
               srv.close();
               done();
             });
-          };
+          }
           checkClientAndServer(thisTest, _.noop, serverOpts);
         });
         it('should succeed in sending a good grpc-timeout value', function(done) {
@@ -587,7 +666,7 @@ describe('Base RPC Client', function() {
           // thisTest sends the grpc-timeout header with a valid value.
           var headers = {};
           headers[headerName] = headerValue;
-          var thisTest = function(srv, stub) {
+          function thisTest(srv, stub) {
             stub.post(path, msg, function(response) {
               response.on('data', _.noop);
               response.on('end', function() {
@@ -595,9 +674,9 @@ describe('Base RPC Client', function() {
                 done();
               });
             }, {headers: headers});
-          };
+          }
 
-          var thisServer = function(request, response) {
+          function thisServer(request, response) {
             var receiveThenReply = function() {
               encodeMessage(reply, null, makeSendEncodedResponse(response));
             };
@@ -609,7 +688,7 @@ describe('Base RPC Client', function() {
               });
               decodeMessage(data, null, receiveThenReply);
             });
-          };
+          }
           checkClientAndServer(thisTest, thisServer, serverOpts);
         });
         it('should send a grpc-timeout when a deadline is provided', function(done) {
@@ -618,10 +697,10 @@ describe('Base RPC Client', function() {
           var testDeadline = new Date();
           var nowPlus10 = Date.now() + Math.pow(10, 4);
           testDeadline.setTime(nowPlus10);
-          headers.deadline = testDeadline;
-          var thisTest = function(srv, stub) {
+          headers['grpc-timeout'] = testDeadline;
+          function thisTest(srv, stub) {
             stub.post(path, msg, _.noop, {headers: headers});
-          };
+          }
 
           var server = createServer(serverOpts, function(request) {
             expect(request.headers['grpc-timeout']).to.exist();
@@ -636,20 +715,20 @@ describe('Base RPC Client', function() {
           var testDeadline = new Date();
           var nowPlusHalfSec = Date.now() + 500; // 500 ms
           testDeadline.setTime(nowPlusHalfSec);
-          headers.deadline = testDeadline;
+          headers['grpc-timeout'] = testDeadline;
           var wantedCode = dorusu.rpcCode('DEADLINE_EXCEEDED');
-          var thisTest = function(srv, stub) {
+          function thisTest(srv, stub) {
             var req = stub.post(path, msg, _.noop, { headers: headers});
             req.on('cancel', function(code) {
               expect(wantedCode).to.equal(code);
               done();
             });
-          };
+          }
 
-          var thisServer = function(request) {
+          function thisServer(request) {
             expect(request.headers['grpc-timeout']).to.exist();
             // don't handle response, this should cause the client to cancel.
-          };
+          }
           checkClientAndServer(thisTest, thisServer, serverOpts);
         });
       });
@@ -657,7 +736,7 @@ describe('Base RPC Client', function() {
     describe(connType + ': response metadata', function() {
       it('only emits a metadata event when any is present', function(done) {
         // thisTest checks that no metadata is set
-        var thisTest = function(srv, stub) {
+        function thisTest(srv, stub) {
           stub.post(path, msg, function(response) {
             var metadataFired = false;
             response.on('data', _.noop);
@@ -670,8 +749,8 @@ describe('Base RPC Client', function() {
               done();
             });
           });
-        };
-        var thisServer = function(request, response) {
+        }
+        function thisServer(request, response) {
           var receiveThenReply = function() {
             encodeMessage(reply, null, makeSendEncodedResponse(response));
           };
@@ -685,12 +764,12 @@ describe('Base RPC Client', function() {
             response.sendDate = false;  // by default the date header gets sent
             decodeMessage(data, null, receiveThenReply);
           });
-        };
+        }
         checkClientAndServer(thisTest, thisServer, serverOpts);
       });
       it('should include any unreserved headers', function(done) {
         // thisTest checks that the metadata includes expected headers
-        var thisTest = function(srv, stub) {
+        function thisTest(srv, stub) {
           stub.post(path, msg, function(response) {
             var theMetadata;
             var want = {
@@ -707,8 +786,8 @@ describe('Base RPC Client', function() {
               done();
             });
           });
-        };
-        var thisServer = function(request, response) {
+        }
+        function thisServer(request, response) {
           var receiveThenReply = function() {
             encodeMessage(reply, null, makeSendEncodedResponse(response));
           };
@@ -723,13 +802,13 @@ describe('Base RPC Client', function() {
             response.sendDate = false;  // by default the date header gets sent
             decodeMessage(data, null, receiveThenReply);
           });
-        };
+        }
         checkClientAndServer(thisTest, thisServer, serverOpts);
       });
       it('should represent multi-value metadata as arrays', function(done) {
         // thisTest checks that multi-value metadata is propagated as an
         // array.
-        var thisTest = function(srv, stub) {
+        function thisTest(srv, stub) {
           stub.post(path, msg, function(response) {
             var theMetadata;
             response.on('data', _.noop);
@@ -745,8 +824,8 @@ describe('Base RPC Client', function() {
               done();
             });
           });
-        };
-        var thisServer = function(request, response) {
+        }
+        function thisServer(request, response) {
           var receiveThenReply = function() {
             encodeMessage(reply, null, makeSendEncodedResponse(response));
           };
@@ -760,13 +839,13 @@ describe('Base RPC Client', function() {
             response.sendDate = false;  // stop 'date' from being sent
             decodeMessage(data, null, receiveThenReply);
           });
-        };
+        }
         checkClientAndServer(thisTest, thisServer, serverOpts);
       });
       it('should decode binary metadata ok', function(done) {
         var buf = new Buffer('\u00bd + \u00bc = \u00be');
         // thisTest checks that binary metadata is decoded into a Buffer.
-        var thisTest = function(srv, stub) {
+        function thisTest(srv, stub) {
           stub.post(path, msg, function(response) {
             var theMetadata;
             response.on('data', _.noop);
@@ -782,8 +861,8 @@ describe('Base RPC Client', function() {
               done();
             });
           });
-        };
-        var thisServer = function(request, response) {
+        }
+        function thisServer(request, response) {
           var receiveThenReply = function() {
             encodeMessage(reply, null, makeSendEncodedResponse(response));
           };
@@ -797,14 +876,14 @@ describe('Base RPC Client', function() {
             response.sendDate = false;  // stop 'date' from being sent
             decodeMessage(data, null, receiveThenReply);
           });
-        };
+        }
         checkClientAndServer(thisTest, thisServer, serverOpts);
       });
       it('should decode multi-value binary metadata ok', function(done) {
         var buf = new Buffer('\u00bd + \u00bc = \u00be');
         // thisTest checks that multi-value binary metadata is decoded into
         // buffers.
-        var thisTest = function(srv, stub) {
+        function thisTest(srv, stub) {
           stub.post(path, msg, function(response) {
             var theMetadata;
             response.on('data', _.noop);
@@ -820,8 +899,8 @@ describe('Base RPC Client', function() {
               done();
             });
           });
-        };
-        var thisServer = function(request, response) {
+        }
+        function thisServer(request, response) {
           var receiveThenReply = function() {
             encodeMessage(reply, null, makeSendEncodedResponse(response));
           };
@@ -835,7 +914,7 @@ describe('Base RPC Client', function() {
             response.sendDate = false;  // stop 'date' from being sent
             decodeMessage(data, null, receiveThenReply);
           });
-        };
+        }
         checkClientAndServer(thisTest, thisServer, serverOpts);
       });
     });
@@ -853,7 +932,7 @@ describe('Base RPC Client', function() {
           it(testDesc, function(done) {
             // thisTest checks that the client throws an error on a bad
             // status.
-            var thisTest = function(srv, stub) {
+            function thisTest(srv, stub) {
               var checkError = function checkError(resp) {
                 resp.on('error', function() {
                   srv.close();
@@ -861,9 +940,9 @@ describe('Base RPC Client', function() {
                 });
               };
               stub.post(path, msg, checkError);
-            };
+            }
 
-            var thisServer = function(request, response) {
+            function thisServer(request, response) {
               var receiveThenReply = function() {
                 encodeMessage(reply, null, makeSendEncodedResponse(response));
               };
@@ -875,7 +954,7 @@ describe('Base RPC Client', function() {
                 }
                 decodeMessage(data, null, receiveThenReply);
               });
-            };
+            }
             checkClientAndServer(thisTest, thisServer, serverOpts);
           });
         });
@@ -884,30 +963,20 @@ describe('Base RPC Client', function() {
         // thisTest checks that the expected status code and message are received.
         var code = 14014;
         var message = 'code is fourteen-o-fourteen';
-        var thisTest = function(srv, stub) {
-          stub.post(path, msg, function(response) {
-            var theStatus;
-            var theError;
-            response.on('data', _.noop);
-            response.on('status', function(status) {
-              theStatus = status;
-            });
-            response.on('error', function(err) {
-              theError = err;
-            });
-            response.on('end', function() {
-              var wanted = {
-                'message': message,
-                'code': code
-              };
-              expect(theStatus).to.deep.equal(wanted);
-              expect(theError).to.deep.equal(wanted);
-              srv.close();
-              done();
-            });
-          });
-        };
-        var thisServer = function(request, response) {
+        function thisTest(srv, stub) {
+          function onEnd(gotStatus, gotError) {
+            var wanted = {
+              'message': message,
+              'code': code
+            };
+            expect(gotStatus).to.deep.equal(wanted);
+            expect(gotError).to.deep.equal(wanted);
+            srv.close();
+            done();
+          }
+          stub.post(path, msg, checkResponseUsing(onEnd));
+        }
+        function thisServer(request, response) {
           var receiveThenReply = function() {
             encodeMessage(reply, null, makeSendEncodedResponse(response));
           };
@@ -918,46 +987,34 @@ describe('Base RPC Client', function() {
             });
             decodeMessage(data, null, receiveThenReply);
           });
-        };
+        }
         checkClientAndServer(thisTest, thisServer, serverOpts);
       });
     });
     describe(connType + ': cancellation', function() {
       it('should cancel a request ok', function(done) {
         // thisTest makes a request then cancels it.
-        var thisTest = function(srv, stub) {
+        function thisTest(srv, stub) {
           var req = stub.post(path, msg, _.noop);
           req.on('cancel', function() {
             srv.close();
             done();
           });
           req.cancel();
-        };
-
-        var thisServer = function(request) {
-          expect(request.headers['grpc-timeout']).to.not.exist();
-          // confirm that no timeout header was sent
-          // don't handle response, this should cause the client to cancel.
-        };
-        checkClientAndServer(thisTest, thisServer, serverOpts);
+        }
+        checkClientAndServer(thisTest, _.noop, serverOpts);
       });
       it('should abort a request ok', function(done) {
         // thisTest makes a request then aborts it.
-        var thisTest = function(srv, stub) {
+        function thisTest(srv, stub) {
           var req = stub.post(path, msg, _.noop);
           req.on('cancel', function() {
             srv.close();
             done();
           });
           req.abort();
-        };
-
-        var thisServer = function(request) {
-          expect(request.headers['grpc-timeout']).to.not.exist();
-          // confirm that no timeout header was sent
-          // don't handle response, this should cause the client to cancel.
-        };
-        checkClientAndServer(thisTest, thisServer, serverOpts);
+        }
+        checkClientAndServer(thisTest, _.noop, serverOpts);
       });
     });
   });
