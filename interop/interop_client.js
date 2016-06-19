@@ -75,9 +75,6 @@ var ArgumentParser = require('argparse').ArgumentParser;
 var Readable = require('stream').Readable;
 var PassThrough = require('stream').PassThrough;
 
-// Setup functions to use the default (noop) logger; main() resets this.
-var log = dorusu.noopLogger;
-
 /**
  * Create a buffer filled with `size` zeroes.
  *
@@ -136,9 +133,10 @@ exports.emptyUnary = function emptyUnary(client, next) {
   var req = {};
   var onEnd = function() {
     expect(gotMsg).to.eql({});
-    log.info('Verified: ok emptyCall(', req, ') =>', gotMsg);
+    dorusu.logger.info('Verified: ok emptyCall(', req, ') =>', gotMsg);
     next();
   };
+  dorusu.logger.info('Checking: emptyCall');
   client.emptyCall(req, function(response) {
     response.on('end', onEnd);
     response.on('data', saveMessage);
@@ -153,7 +151,7 @@ exports.largeUnary = function largeUnary(client, next) {
   var onEnd = function() {
     expect(gotMsg.payload.type).to.eql('COMPRESSABLE');
     expect(gotMsg.payload.body.length).to.eql(314159);
-    log.info('Verified: largeUnary(...) => (', gotMsg, ')');
+    dorusu.logger.info('Verified: largeUnary(...) => (', gotMsg, ')');
     next();
   };
 
@@ -165,6 +163,7 @@ exports.largeUnary = function largeUnary(client, next) {
       body: zeroes(271828)
     }
   };
+  dorusu.logger.info('Checking: largeUnary');
   client.unaryCall(req, function(response) {
     response.on('end', onEnd);
     response.on('data', saveMessage);
@@ -196,7 +195,7 @@ exports.computeEngine = function computeEngine(Ctor, opts, args, next) {
     expect(gotMsg.payload.type).to.eql('COMPRESSABLE');
     expect(gotMsg.payload.body.length).to.eql(314159);
     expect(gotMsg.username).to.eql(wantedEmail);
-    log.info('Verified: computeEngine had email %s', wantedEmail);
+    dorusu.logger.info('Verified: computeEngine had email %s', wantedEmail);
     next();
   };
 
@@ -212,6 +211,7 @@ exports.computeEngine = function computeEngine(Ctor, opts, args, next) {
   };
   opts.updateHeaders = dorusu.addAuthFromADC();  // no scope needed on GCE
   var client = new Ctor(opts);
+  dorusu.logger.info('Checking: computeEngine');
   client.unaryCall(req, function(response) {
     response.on('end', onEnd);
     response.on('data', saveMessage);
@@ -232,7 +232,7 @@ exports.jwtTokenCreds = function jwtTokenCreds(Ctor, opts, args, next) {
       expect(gotMsg.payload.type).to.eql('COMPRESSABLE');
       expect(gotMsg.payload.body.length).to.eql(314159);
       expect(gotMsg.username).to.eql(wantedEmail);
-      log.info('Verified: jwtTokenCreds had email %s', gotMsg.username);
+      dorusu.logger.info('Verified: jwtTokenCreds had email %s', gotMsg.username);
       next();
     });
   };
@@ -249,6 +249,7 @@ exports.jwtTokenCreds = function jwtTokenCreds(Ctor, opts, args, next) {
     response_size: 314159,
     response_type: 'COMPRESSABLE'
   };
+  dorusu.logger.info('Checking: jwtTokens');
   client.unaryCall(req, function(response) {
     response.on('end', onEnd);
     response.on('data', saveMessage);
@@ -271,7 +272,7 @@ exports.oauth2AuthToken = function oauth2AuthToken(Ctor, opts, args, next) {
       expect(gotMsg.oauth_scope).to.not.be.empty();
       expect(args.oauth_scope).to.have.string(gotMsg.oauth_scope);
       expect(gotMsg.username).to.eql(wantedEmail);
-      log.info('Verified: oauth2AuthToken had scope %s', gotMsg.oauth_scope);
+      dorusu.logger.info('Verified: oauth2AuthToken had scope %s', gotMsg.oauth_scope);
       next();
     });
   };
@@ -288,6 +289,7 @@ exports.oauth2AuthToken = function oauth2AuthToken(Ctor, opts, args, next) {
     response_size: 314159,
     response_type: 'COMPRESSABLE'
   };
+  dorusu.logger.info('Checking: oauth2AuthToken');
   client.unaryCall(req, function(response) {
     response.on('end', onEnd);
     response.on('data', saveMessage);
@@ -317,7 +319,7 @@ exports.perRpcCreds = function perRpcCreds(Ctor, opts, args, next) {
       expect(gotMsg.oauth_scope).to.not.be.empty();
       expect(args.oauth_scope).to.have.string(gotMsg.oauth_scope);
       expect(gotMsg.username).to.eql(wantedEmail);
-      log.info('Verified: perRpcCreds had scope %s', gotMsg.oauth_scope);
+      dorusu.logger.info('Verified: perRpcCreds had scope %s', gotMsg.oauth_scope);
     });
     next();
   };
@@ -333,6 +335,7 @@ exports.perRpcCreds = function perRpcCreds(Ctor, opts, args, next) {
     response_size: 314159,
     response_type: 'COMPRESSABLE'
   };
+  dorusu.logger.info('Checking: perRpcCreds');
   client.unaryCall(req, function(response) {
     response.on('end', onEnd);
     response.on('data', saveMessage);
@@ -357,7 +360,7 @@ exports.serviceAccount = function serviceAccount(Ctor, opts, args, next) {
       expect(gotMsg.oauth_scope).to.not.be.empty();
       expect(args.oauth_scope).to.have.string(gotMsg.oauth_scope);
       expect(gotMsg.username).to.eql(wantedEmail);
-      log.info('Verified: serviceAccountCreds had scope %s', gotMsg.oauth_scope);
+      dorusu.logger.info('Verified: serviceAccountCreds had scope %s', gotMsg.oauth_scope);
       next();
     });
   };
@@ -374,6 +377,7 @@ exports.serviceAccount = function serviceAccount(Ctor, opts, args, next) {
     response_size: 314159,
     response_type: 'COMPRESSABLE'
   };
+  dorusu.logger.info('Checking: serviceAccount');
   client.unaryCall(req, function(response) {
     response.on('end', onEnd);
     response.on('data', saveMessage);
@@ -388,7 +392,7 @@ exports.clientStreaming = function clientStreaming(client, next) {
   };
   var onEnd = function onEnd() {
     expect(gotMsg.aggregated_payload_size).to.eql(74922);
-    log.info('Verified: OK, clientStreaming sent 74922 bytes');
+    dorusu.logger.info('Verified: OK, clientStreaming sent 74922 bytes');
     done();
   };
 
@@ -399,6 +403,7 @@ exports.clientStreaming = function clientStreaming(client, next) {
     src.push({payload: {body: zeroes(payloadSizes[i])}});
   }
   src.push(null);
+  dorusu.logger.info('Checking: clientStreaming');
   client.streamingInputCall(src, function(response) {
     response.on('end', onEnd);
     response.on('data', saveMessage);
@@ -410,12 +415,13 @@ exports.cancelAfterBegin = function cancelAfterBegin(client, next) {
   var verifyWasCancelled = function verifyWasCancelled(code) {
     var wantedCode = dorusu.rpcCode('CANCELLED');
     expect(code).to.equal(wantedCode);
-    log.info('Verified: OK, cancelAfterBegin had cancelled OK');
+    dorusu.logger.info('Verified: OK, cancelAfterBegin had cancelled OK');
     done();
   };
 
   // Run the test.
   var src = new PassThrough({objectMode: true});
+  dorusu.logger.info('Checking: cancelAfterBegin');
   var req = client.streamingInputCall(src, _.noop);
   req.on('cancel', verifyWasCancelled);
   req.cancel();
@@ -428,10 +434,10 @@ exports.cancelAfterFirst = function cancelAfterFirst(client, next) {
   var index = 0;
   var nextPing = function nextPing() {
     if (index === 4) {
-      log.info('cancelAfterFirst: ending after', index, 'pings');
+      dorusu.logger.info('cancelAfterFirst: ending after', index, 'pings');
       src.end();
     } else {
-      log.info('cancelAfterFirst: writing index:', index);
+      dorusu.logger.info('cancelAfterFirst: writing message #', index);
       src.write({
         response_type: 'COMPRESSABLE',
         response_parameters: [
@@ -444,12 +450,12 @@ exports.cancelAfterFirst = function cancelAfterFirst(client, next) {
   var cancelled = false;
   var req;
   var verifyEachMessage = function verifyEachMessage(msg) {
-    log.info('cancelAfterFirst: receiving index:', index);
+    dorusu.logger.info('cancelAfterFirst: receiving index:', index);
     expect(msg.payload.type).to.eql('COMPRESSABLE');
     expect(msg.payload.body.lengh, responseSizes[index]);
     index += 1;
     if (index === 1 && req) {
-      log.info('... cancelling after', index, 'msg');
+      dorusu.logger.info('... cancelling after', index, 'msg');
       req.cancel();
     }
     nextPing();
@@ -457,12 +463,13 @@ exports.cancelAfterFirst = function cancelAfterFirst(client, next) {
   var done = next || _.noop;
   var onEnd = function onEnd() {
     expect(cancelled).to.be.true();
-    log.info('Verified: cancelAfterFirst cancelled after', index, 'msg');
+    dorusu.logger.info('Verified: cancelAfterFirst cancelled after', index, 'msg');
     done();
   };
 
   // Run the test.
   nextPing();  // start with a ping
+  dorusu.logger.info('Checking: cancelAfterFirst');
   req = client.fullDuplexCall(src, function onResponse(response) {
     response.on('data', verifyEachMessage);
     response.on('end', onEnd);
@@ -480,10 +487,10 @@ exports.timeoutOnSleeper = function timeoutOnSleeper(client, next) {
   var index = 0;
   var nextPing = function nextPing() {
     if (index === 4) {
-      log.info('timeoutOnSleeper: ending after', index, 'pings');
+      dorusu.logger.info('timeoutOnSleeper: ending after', index, 'pings');
       src.end();
     } else {
-      log.info('timeoutOnSleeper: writing index:', index);
+      dorusu.logger.info('timeoutOnSleeper: writing message #', index);
       src.write({
         response_type: 'COMPRESSABLE',
         response_parameters: [
@@ -494,7 +501,7 @@ exports.timeoutOnSleeper = function timeoutOnSleeper(client, next) {
     }
   };
   var verifyEachMessage = function verifyEachMessage(msg) {
-    log.info('timeoutOnSleeper: receiving index:', index);
+    dorusu.logger.info('timeoutOnSleeper: receiving index:', index);
     expect(msg.payload.type).to.eql('COMPRESSABLE');
     expect(msg.payload.body.lengh, responseSizes[index]);
     index += 1;
@@ -502,12 +509,13 @@ exports.timeoutOnSleeper = function timeoutOnSleeper(client, next) {
   };
   var verifyCancelled = function() {
     expect(index).to.be.below(payloadSizes.length);
-    log.info('Verified: timeoutOnSleeper cancelled after', index, 'msg');
+    dorusu.logger.info('Verified: timeoutOnSleeper cancelled after', index, 'msg');
     done();
   };
 
   // Run the test.
   nextPing();  // start with a ping
+  dorusu.logger.info('Checking: timeoutOnSleeper');
   var req = client.fullDuplexCall(src, function onResponse(response) {
     response.on('data', verifyEachMessage);
   }, {
@@ -538,9 +546,10 @@ exports.serverStreaming = function serverStreaming(client, next) {
   };
 
   // Run the test.
+  dorusu.logger.info('Checking: serverStreaming');
   client.streamingOutputCall(req, function(response) {
     response.on('end', function() {
-      log.info('Verified: streamingStreaming received', index, 'msgs');
+      dorusu.logger.info('Verified: streamingStreaming received', index, 'msgs');
       done();
     });
     response.on('data', verifyEachMessage);
@@ -555,10 +564,10 @@ exports.pingPong = function pingPong(client, next) {
   var index = 0;
   var nextPing = function nextPing() {
     if (index === 4) {
-      log.info('pingPong: ending after', index, 'pings');
+      dorusu.logger.info('pingPong: ending after', index, 'pings');
       src.end();
     } else {
-      log.info('pingPong: writing index:', index);
+      dorusu.logger.info('pingPong: writing message #', index);
       src.write({
         response_type: 'COMPRESSABLE',
         response_parameters: [
@@ -569,7 +578,7 @@ exports.pingPong = function pingPong(client, next) {
     }
   };
   var verifyEachMessage = function verifyEachMessage(msg) {
-    log.info('pingPong: receiving index:', index);
+    dorusu.logger.info('pingPong: receiving index:', index);
     expect(msg.payload.type).to.eql('COMPRESSABLE');
     expect(msg.payload.body.lengh, responseSizes[index]);
     index += 1;
@@ -578,9 +587,10 @@ exports.pingPong = function pingPong(client, next) {
 
   // Run the test.
   nextPing();  // start with a ping
+  dorusu.logger.info('Checking: pingPong');
   client.fullDuplexCall(src, function(response) {
     response.on('end', function() {
-      log.info('Verified: pingPong sent/received', index, 'msgs');
+      dorusu.logger.info('Verified: pingPong sent/received', index, 'msgs');
       done();
     });
     response.on('data', verifyEachMessage);
@@ -591,9 +601,10 @@ exports.emptyStream = function emptyStream(client, next) {
   var done = next || _.noop;
   var src = new Readable({objectMode:true});
   src.push(null);  // Do not send any messages;
+  dorusu.logger.info('Checking: emptyStream');
   client.fullDuplexCall(src, function(response) {
     response.on('end', function() {
-      log.info('Verified: empty stream sent/received');
+      dorusu.logger.info('Verified: empty stream sent/received');
       done();
     });
     response.on('data', function() {
@@ -633,9 +644,9 @@ exports.withoutAuthTests = {
   empty_unary: exports.emptyUnary,
   client_streaming: exports.clientStreaming,
   server_streaming: exports.serverStreaming,
-  ping_pong: exports.pingPong,
   empty_stream: exports.emptyStream,
-  timeout_on_sleeping_server: exports.timeoutOnSleeper
+  timeout_on_sleeping_server: exports.timeoutOnSleeper,
+  ping_pong: exports.pingPong
 };
 
 /**
@@ -735,16 +746,16 @@ var parseArgs = function parseArgs() {
  * Provides the command line entry point when this file is run as a script.
  */
 var main = function main() {
-  log = bunyan.createLogger({
+  var log = bunyan.createLogger({
     name: 'interop_client',
     stream: process.stdout,
     level: process.env.HTTP2_LOG || 'info',
     serializers: http2.serializers
   });
+  dorusu.configure({logger: log});
 
   var args = parseArgs();
   var opts = {
-    log: log,
     port: args.server_port,
     host: args.server_host
   };
