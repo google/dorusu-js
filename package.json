@@ -41,6 +41,8 @@
     "codecov": "istanbul cover -x '**/example/**' -x '**/interop/**' _mocha -- --full-trace --reporter spec -i -g 'External Interop' --slow 1000 --timeout 5000 && codecov",
     "doc": "jsdoc -c jsdoc.json",
     "interop-test": "istanbul test _mocha -- --reporter spec -g 'External Interop'",
+    "prod-interop": "./interop/run_prod_interop.js",
+    "bunyan-prod-interop": "./interop/run_prod_interop.js | bunyan -o short",
     "install-go-interop": "./interop/go_interop_agent.js",
     "lint": "jshint lib test interop example",
     "preversion": "npm test && npm run lint",
