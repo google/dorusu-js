@@ -1,5 +1,6 @@
 ### Changes
 
+* Add a tool for syncing the grpc distribution protobuf definitions ([@tbetbetbe][])
 * Add a command for running the prod interop tests ([@tbetbetbe][])
 * Add server child requests ([@tbetbetbe][])
 * Allow the timeout to be specified using a Date() instance ([@tbetbetbe][])

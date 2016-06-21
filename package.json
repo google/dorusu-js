@@ -8,11 +8,14 @@
     "chai": "~3.0",
     "codecov": "~1.0",
     "dirty-chai": "~1.2",
+    "glob": "~7.0.3",
     "istanbul": "~0.3",
     "jsdoc": "~3.3",
     "jshint": "~2.5",
     "mocha": "~2.2",
-    "rewire": "~2.5"
+    "node-stream-zip": "~1.3.3",
+    "rewire": "~2.5.1",
+    "tmp": "~0.0.26"
  },
   "repository": {
     "type": "git",
@@ -28,7 +31,7 @@
     "argparse": "~1.0",
     "async": "~1.2",
     "concat-stream": "~1.4",
-    "fs-extra": "~0.18",
+    "fs-extra": "~0.30.0",
     "google-auth-library": "~0.9",
     "http2": "~3.3.4",
     "lodash": "~3.9",
@@ -38,15 +41,16 @@
     "node": ">= 4.0.0"
   },
   "scripts": {
+    "bunyan-prod-interop": "./interop/run_prod_interop.js | bunyan -o short",
     "codecov": "istanbul cover -x '**/example/**' -x '**/interop/**' _mocha -- --full-trace --reporter spec -i -g 'External Interop' --slow 1000 --timeout 5000 && codecov",
     "doc": "jsdoc -c jsdoc.json",
-    "interop-test": "istanbul test _mocha -- --reporter spec -g 'External Interop'",
-    "prod-interop": "./interop/run_prod_interop.js",
-    "bunyan-prod-interop": "./interop/run_prod_interop.js | bunyan -o short",
     "install-go-interop": "./interop/go_interop_agent.js",
-    "lint": "jshint lib test interop example",
-    "preversion": "npm test && npm run lint",
+    "interop-test": "istanbul test _mocha -- --reporter spec -g 'External Interop'",
+    "lint": "jshint lib test interop example tools",
     "postversion": "git push origin && git push origin --tags",
+    "preversion": "npm test && npm run lint",
+    "prod-interop": "./interop/run_prod_interop.js",
+    "sync-grpc-pbs": "./tools/sync_grpc_pbs.js",
     "test": "istanbul test _mocha -- --full-trace --reporter spec -i -g 'External Interop' --slow 1000 --timeout 5000"
   },
   "author": "Timothy Emiola",
