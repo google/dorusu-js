@@ -61,7 +61,7 @@ understood.
 [HTTP2 API]:https://github.com/molnarg/node-http
 [HTTPS API]:http://nodejs.org/api/https.html
 [HTTP API]:http://nodejs.org/api/http.html
-[RPC protocol]: https://github.com/grpc/grpc-common/blob/master/PROTOCOL-HTTP2.md
+[RPC protocol]: https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md
 [HTTP2]:http://tools.ietf.org/html/draft-ietf-httpbis-http2-16#section-8.1.2.4
 [Express API]:http://expressjs.com/4x/api.html
 
